@@ -1,0 +1,16 @@
+---
+-
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: copy file from linux to vcenter
+      community.vmware.vsphere_copy:
+        hostname: "your vcenter or esxi password"
+        username: "user username@vsphere.local"
+        password: "your password"
+        validate_certs: False
+        datacenter: "SHM Datacenter"
+        src: "your iso file path in your local host"
+        datastore: "data store name"
+        path: "data store path"
+...
