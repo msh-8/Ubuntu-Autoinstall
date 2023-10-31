@@ -1,20 +1,27 @@
 #cloud-config
 autoinstall:
   version: 1
+ # execute commands before run autoinstall.yaml file.
   early-commands:
     - |
+ # Create a file to run some bash scripts
       cat << EOF >> /test.sh
       #/bin/bash
       #####diskname=#(lsblk | awk '{print$1}' | grep -E 'sda$|vda$')
       #####diskname=#(lsblk | cut -f1 -d' ' | grep -E 'sda$|vda$')
       ######sed -i "s/lsblk_name/${diskname}/" /grub.py
       #####sed -i "s/lsblk_name/${diskname}/" /bios.py
+ # Find current block device name on the target.
       diskname=$(lsblk -o NAME | grep -E 'sda$|vda$')
+ # Detect bios or grub boot loader.
       if [ -e "/sys/firmware/efi"  ]; then
+ # run grub.py to prepare autoinstall.yaml file based on the grub bootloader storage configurations.
         python3 /grub.py
       else
+ # run grub.py to prepare autoinstall.yaml file based on the bios bootloader storage configurations.
         python3 /bios.py
       fi
+ # find the first  active network interface.
       for interface in \$(ls /sys/class/net/); do 
          if [ \$interface = lo ]; then 
             continue; 
@@ -22,12 +29,16 @@ autoinstall:
             nicname=\$interface
          fi
       done
+ # Edit autoinstall.yaml file to change nicname to first active network interface.
       sed -i "s/nicname/\$nicname/" /autoinstall.yaml
       EOF
+ # crate grub.py file to prepare autoinstall.yaml file for grub bootloader.
     - |  
       cat << EOF > /grub.py
       #!/usr/bin/python3
+      # import yaml module to change the autoinstall.yaml
       import yaml
+      # import subporcess to find current block device name. (sda or vda)
       import subprocess
       #diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")
       #pname = subprocess.getoutput("dmidecode -s system-product-name")
@@ -35,33 +46,55 @@ autoinstall:
       #   diskname = 'vda'
       #else:
       #   diskname= 'sda'
+      # Find sda or vda block device
       diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")
       #diskname = '${lsblk_name}'
+      # Create a dictionary to prepare partition table of disk (note = path: /dev/sda or vda , grub_device: False)
       disk_dic = {'id': diskname, 'type': 'disk', 'wipe': 'superblock', 'ptable': 'gpt', 'path': str('/dev/'+diskname), 'grub_device': False}
+      # Create a dictionary to Install GRUB partiotion on disk (for /boot/efi || note = flag: boot, grub_device: True)
       part1_dic = {'id': str(diskname+'1'), 'type': 'partition', 'size': '800M', 'device': diskname, 'flag': 'boot', 'wipe': 'superblock', 'grub_device': True, 'number': 1}
+      # Create a dictionary to make file system on GRUB partition (fstype: fat32)
       fmt1_dic = {'id': str(diskname+'1-format'), 'type': 'format', 'fstype': 'fat32', 'label': 'BOOTEFI', 'volume': str(diskname+'1')}
+      # Create a dictionary to prepare boot partition on disk (sda2 or vda2 for /boot)
       part2_dic = {'id': str(diskname+'2'), 'type': 'partition', 'size': '2G', 'device': diskname, 'name': 'boot-partition', 'wipe': 'superblock', 'number': 2}
+      # Create a dictionary to make file system on boot partition
       fmt2_dic = {'id': str(diskname+'2-format'), 'type': 'format', 'fstype': 'ext4', 'label': 'BOOT', 'volume': str(diskname+'2')}
+      # Create a dictionary to Install LVM partition on disk (sda3 or vda3 for /dev/mapper/vg0)
       part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
+      # Create a dictionary to Install volume group(vg) on LVM partition (create /dev/mapper/vg0 || type: lvm_volgroup)
       volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
+      # Create a dictionary to Install Logical Volume(lv) on Volume Group(vg) (create /dev/vg0/lv0 || type: lvm_partition)
       lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '10G', 'wipe': 'superblock'}
+      # Create a dictionary to make file system on lv0(logical volume) partition
       lv_fmt_dic = {'id': 'lv0-format', 'type': 'format', 'fstype': 'ext4', 'volume': 'lv0', 'preserve': False}
+      # Create a dictionary to mount GRUB file system on /boot/efi directory
       mnt1_dic = {'id': str(diskname+'1-mount'), 'type': 'mount', 'path': '/boot/efi', 'device': str(diskname+'1-format')}
+      # Create a dictionary to mount boot file system on /boot directory
       mnt2_dic = {'id': str(diskname+'2-mount'), 'type': 'mount', 'path': '/boot', 'device': str(diskname+'2-format')}
+      # Create a dictionary to mount lv0 file system on / directory
       mnt3_dic = {'id': 'lv0-mount', 'type': 'mount', 'path': '/', 'device': 'lv0-format'}
+      # create a list of mentioned above dictionaries.
       disk_cfg_lst = [disk_dic, part1_dic, fmt1_dic, part2_dic, fmt2_dic, part3_dic, volgp_dic, lvm_part_dic, lv_fmt_dic, mnt1_dic, mnt2_dic, mnt3_dic]
+      # open the autoinstall.yaml file to edit.
       with open('/autoinstall.yaml', 'r') as reader:
          autoinstall = yaml.safe_load(reader)
+      # clear any configuration of storage section.
       autoinstall['storage'].clear()
+      # update configuration of storage section with list of dictionaries.
       autoinstall['storage'].update({'config' : disk_cfg_lst})
+      # Write the autoinstall.yaml with new configuration.
       with open('/autoinstall.yaml', 'w') as writer:
         yaml.dump(autoinstall, writer)
       EOF
     - |  
+ # crate grub.py file to prepare autoinstall.yaml file for BIOS bootloader.
       cat << EOF > /bios.py
       #!/usr/bin/python3
+      # import yaml module to change the autoinstall.yaml
       import yaml
+      # import subporcess to find current block device name. (sda or vda)
       import subprocess
+      # Find sda or vda block device 
       diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")
       #pname = subprocess.getoutput("dmidecode -s system-product-name")
       #if pname == 'KVM' or pname == 'Bochs':
@@ -69,27 +102,44 @@ autoinstall:
       #else:
       #   diskname= 'sda'
       #diskname = '${lablk_name}'
+      # Create a dictionary to prepare partition table of disk (sda or vda || note = path: /dev/sda or vda , grub_device: True)
       disk_dic = {'id': diskname, 'type': 'disk', 'wipe': 'superblock', 'ptable': 'gpt', 'path': str('/dev/'+diskname), 'grub_device': True}
+      # Create a dictionary to Install BIOS partition on disk (sda1 or vda1 for /boot/efi || note = flag: bios_grub, without any file system)
       part1_dic = {'id': str(diskname+'1'), 'type': 'partition', 'size': '1M', 'device': diskname, 'flag': 'bios_grub', 'wipe': 'superblock', 'number': 1}
+      # Create a dictionary to prepare boot partition(sda2 or vda2 for /boot)
       part2_dic = {'id': str(diskname+'2'), 'type': 'partition', 'size': '2G', 'device': diskname, 'name': 'boot-partition', 'wipe': 'superblock', 'number': 2}
+      # Create a dictionary to make file system on boot partition
       fmt2_dic = {'id': str(diskname+'2-format'), 'type': 'format', 'fstype': 'ext4', 'label': 'BOOT', 'volume': str(diskname+'2')}
+      # Create a dictionary to Install LVM partition on disk (sda3 or vda3 for /dev/mapper/vg0) 
       part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
+      # Create a dictionary to Install volume group(vg) on LVM partition (create /dev/mapper/vg0 || type: lvm_volgroup)
       volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
+      # Create a dictionary to Install Logical Volume(lv) on Volume Group(vg) (create /dev/vg0/lv0 || type: lvm_partition)
       lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '10G', 'wipe': 'superblock'}
+      # Create a dictionary to make file system on lv0(logical volume) partition
       lv_fmt_dic = {'id': 'lv0-format', 'type': 'format', 'fstype': 'ext4', 'volume': 'lv0', 'preserve': False}
+      # Create a dictionary to mount boot file system on /boot directory
       mnt2_dic = {'id': str(diskname+'2-mount'), 'type': 'mount', 'path': '/boot', 'device': str(diskname+'2-format')}
+      # Create a dictionary to mount lv0 file system on / directory
       mnt3_dic = {'id': 'lv0-mount', 'type': 'mount', 'path': '/', 'device': 'lv0-format'}
+      # create a list of mentioned above dictionaries.
       disk_cfg_lst = [disk_dic, part1_dic, part2_dic, fmt2_dic, part3_dic, volgp_dic, lvm_part_dic, lv_fmt_dic, mnt2_dic, mnt3_dic]
+      # open the autoinstall.yaml file to edit.
       with open('/autoinstall.yaml', 'r') as reader:
         autoinstall = yaml.safe_load(reader)
+      # clear any configuration of storage section.
       autoinstall['storage'].clear()
+      # update configuration of storage section with list of dictionaries.
       autoinstall['storage'].update({'config' : disk_cfg_lst})
+      # Write the autoinstall.yaml with new configuration.
       with open('/autoinstall.yaml', 'w') as writer:
         yaml.dump(autoinstall, writer)
       EOF
+    # make grub.py, bios.py and test.sh file excecutable.
     - chmod +x /grub.py
     - chmod +x /bios.py
     - chmod +x /test.sh
+    # Run test.sh
     - bash /test.sh
   locale: en_US
   keyboard:
@@ -101,6 +151,7 @@ autoinstall:
     network:
       version: 2
       ethernets:
+       # it will be changed with test.sh script
         nicname:
           addresses: ["ip address"]
           gateway4: "gateway"
@@ -108,6 +159,7 @@ autoinstall:
             addresses: ["name server addresses"]
   #packages:
    # - ubuntu-desktop
+  # the following storage config is just to template and it will be changed by script completely.
   storage:
      config:
       - {ptable: gpt, path: /dev/sda, preserve: false, name: '', id: disk-sda, type: disk, grub_device: false}
@@ -122,12 +174,17 @@ autoinstall:
       - {path: /, device: format-2, id: mount-2, type: mount} 
       - {path: /boot, device: format-1, id: mount-1, type: mount} 
       - {path: /boot/efi, device: format-0, id: mount-0, type: mount}
+  # user creation section
   identity:
     hostname: "hostname"
     username: "username"
+    # password must be hashed (openssl passwd -6)
     password: "password"
+  # ssh server configuration
   ssh:
     install-server: yes
+  # execute commands after os installation. 
   late-commands:
+     # make user as a sudoer (NOPASSWD:ALL)
     - echo 'username ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/username # Allow user to run sudo without password
 
