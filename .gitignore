@@ -3,3 +3,5 @@
 !user-data
 !playbooks
 !vmware-copy.yaml
+!grub-cdrom.cfg  
+!grub-http.cfg
