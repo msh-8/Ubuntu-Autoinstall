@@ -1,6 +1,5 @@
 *
 !.gitignore
-!www
 !user-data
 !playbooks
 !vmware-copy.yaml
