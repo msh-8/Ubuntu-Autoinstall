@@ -5,13 +5,12 @@
   tasks:
     - name: copy file from linux to vcenter
       community.vmware.vsphere_copy:
-        hostname: 172.20.22.120
-        username: administrator@vsphere.local
-        password: C10ud_SHM!
+        hostname: "your vcenter or esxi password"
+        username: "user username@vsphere.local"
+        password: "your password"
         validate_certs: False
         datacenter: "SHM Datacenter"
-        src: "/root/msh/ansible/ubuntu-autoinstall/msh-ubuntu-custom.iso"
-        datastore: "FUJITSU DX80"
-        path: "/ISO/Linux/msh-ubuntu-custom-static-ip.iso"
-      register: debug
+        src: "your iso file path in your local host"
+        datastore: "data store name"
+        path: "data store path"
 ...
