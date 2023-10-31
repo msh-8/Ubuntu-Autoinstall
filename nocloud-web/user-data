@@ -40,15 +40,15 @@ autoinstall:
       import yaml
       # import subporcess to find current block device name. (sda or vda)
       import subprocess
-      ######### Test section ################################################
-      #diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")
-      #pname = subprocess.getoutput("dmidecode -s system-product-name")
-      #if pname == 'KVM' or pname == 'Bochs':
-      #   diskname = 'vda'
-      #else:
-      #   diskname= 'sda'
-      # Find sda or vda block device
-      ######################################################################
+       ######## Test section ########################################################
+     # diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")         #
+     # pname = subprocess.getoutput("dmidecode -s system-product-name")               #
+     # if pname == 'KVM' or pname == 'Bochs':                                         #
+     #   diskname = 'vda'                                                             #
+     # else:                                                                          #
+     #   diskname= 'sda'                                                              #
+     #  Find sda or vda block device                                                  #
+       ##############################################################################
       diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")
       #diskname = '${lsblk_name}'
       # Create a dictionary to prepare partition table of disk (note = path: /dev/sda or vda , grub_device: False)
@@ -148,7 +148,7 @@ autoinstall:
     layout: us
     variant: intl
   apt:
-    fallback: continue-anyway
+    fallback: continue-anyway   # it does not interrupt the autoinstall procidure if there is no any internet connection.
   network:
     network:
       version: 2
@@ -165,7 +165,7 @@ autoinstall:
   # the following storage config is just to template and it will be changed by script completely.
   storage:
      config:
-      ############ The following lines will be changed with python script they have been mentioned here as a template.
+      ############ The following lines will be changed with python script they have been mentioned here as a template.###############################
       - {ptable: gpt, path: /dev/sda, preserve: false, name: '', id: disk-sda, type: disk, grub_device: false}
       - {device: disk-sda, size: 800M, wipe: superblock, flag: boot, number: 1, preserve: false, grub_device: true, id: partition-0, type: partition}
       - {fstype: fat32, volume: partition-0, preserve: false, id: format-0, type: format}
