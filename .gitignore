@@ -5,3 +5,4 @@ password
 !user-data
 !playbooks
 !vmware-copy.yaml
+!password
