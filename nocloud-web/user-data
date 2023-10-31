@@ -40,6 +40,7 @@ autoinstall:
       import yaml
       # import subporcess to find current block device name. (sda or vda)
       import subprocess
+      ######### Test section ################################################
       #diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")
       #pname = subprocess.getoutput("dmidecode -s system-product-name")
       #if pname == 'KVM' or pname == 'Bochs':
@@ -47,6 +48,7 @@ autoinstall:
       #else:
       #   diskname= 'sda'
       # Find sda or vda block device
+      ######################################################################
       diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")
       #diskname = '${lsblk_name}'
       # Create a dictionary to prepare partition table of disk (note = path: /dev/sda or vda , grub_device: False)
@@ -157,11 +159,13 @@ autoinstall:
           gateway4: "gateway"
           nameservers:
             addresses: ["name server addresses"]
+  # comment out the following line if you will be able to install any package during os installation procidure.(Internet connection is required.)
   #packages:
    # - ubuntu-desktop
   # the following storage config is just to template and it will be changed by script completely.
   storage:
      config:
+      ############ The following lines will be changed with python script they have been mentioned here as a template.
       - {ptable: gpt, path: /dev/sda, preserve: false, name: '', id: disk-sda, type: disk, grub_device: false}
       - {device: disk-sda, size: 800M, wipe: superblock, flag: boot, number: 1, preserve: false, grub_device: true, id: partition-0, type: partition}
       - {fstype: fat32, volume: partition-0, preserve: false, id: format-0, type: format}
@@ -176,10 +180,10 @@ autoinstall:
       - {path: /boot/efi, device: format-0, id: mount-0, type: mount}
   # user creation section
   identity:
-    hostname: "hostname"
-    username: "username"
+    hostname: "hostname"    # Change with your desired name
+    username: "username"    # Change with your desired name
     # password must be hashed (openssl passwd -6)
-    password: "password"
+    password: "password"    # Execute the 'openssl passwd -6' command and put here the hashed string.(note: double qoute is required around hashed string.)
   # ssh server configuration
   ssh:
     install-server: yes
