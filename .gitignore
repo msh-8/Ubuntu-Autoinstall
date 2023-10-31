@@ -6,3 +6,4 @@
 !grub-cdrom.cfg  
 !grub-http.cfg
 !kvm-command
+!xorriso-command
