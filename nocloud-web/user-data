@@ -32,8 +32,8 @@ autoinstall:
  # Edit autoinstall.yaml file to change nicname to first active network interface.
       sed -i "s/nicname/\$nicname/" /autoinstall.yaml
       EOF
- # crate grub.py file to prepare autoinstall.yaml file for grub bootloader.
     - |  
+ # crate grub.py file to prepare autoinstall.yaml file for grub bootloader.
       cat << EOF > /grub.py
       #!/usr/bin/python3
       # import yaml module to change the autoinstall.yaml
