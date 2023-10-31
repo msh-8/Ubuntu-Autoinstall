@@ -1,0 +1,8 @@
+#kvm command:
+
+#install os:
+kvm -smbios uefi -no-reboot -m 2048 -drive file=./www/image.img,format=raw,cache=none,if=virtio -cdrom  ~/msh/ansible/ubuntu-autoinstall/jammy-live-server-amd64.iso -kernel /mnt/casper/vmlinuz -initrd /mnt/casper/initrd -append 'autoinstall ds=nocloud-net;s=http://192.168.1.1:3003/'
+
+#run kvm:
+kvm -no-reboot -m 2048   -drive file=./www/image.img,format=raw,cache=none,if=virtio
+
