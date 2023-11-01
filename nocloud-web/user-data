@@ -7,11 +7,13 @@ autoinstall:
     - |
       cat << EOF >> /test.sh
       #/bin/bash
-      #####diskname=#(lsblk | awk '{print$1}' | grep -E 'sda$|vda$')
-      #####diskname=#(lsblk | cut -f1 -d' ' | grep -E 'sda$|vda$')
-      ######sed -i "s/lsblk_name/${diskname}/" /grub.py
-      #####sed -i "s/lsblk_name/${diskname}/" /bios.py
- # Find current block device name on the target.
+      ############### Test Section ###################################
+      #    diskname=#(lsblk | awk '{print$1}' | grep -E 'sda$|vda$')  #
+      #    diskname=#(lsblk | cut -f1 -d' ' | grep -E 'sda$|vda$')    #
+      #    sed -i "s/lsblk_name/${diskname}/" /grub.py                #
+      #    sed -i "s/lsblk_name/${diskname}/" /bios.py                #
+      ################################################################
+ # Find current block device name on the target.                      
       diskname=$(lsblk -o NAME | grep -E 'sda$|vda$')
  # Detect bios or grub boot loader.
       if [ -e "/sys/firmware/efi"  ]; then
@@ -21,13 +23,51 @@ autoinstall:
  # run grub.py to prepare autoinstall.yaml file based on the bios bootloader storage configurations.
         python3 /bios.py
       fi
- # find the first  active network interface.
-      for interface in \$(ls /sys/class/net/); do 
-         if [ \$interface = lo ]; then 
-            continue; 
-         elif [ \$(cat /sys/class/net/\$interface/operstate) = up ]; then 
-            nicname=\$interface
-         fi
+       ######## Test section ########################################################
+     # for interface in \$(ls /sys/class/net/); do                                   #
+     #    if [ \$interface = lo ]; then                                              #
+     #       continue;                                                               #
+     #    elif [ \$(cat /sys/class/net/\$interface/operstate) = up ]; then           #
+     #       nicname=\$interface                                                     #
+     #    fi                                                                         #
+     # done                                                                          #
+     # ##############################################################################
+      # find the ip address in /autoinstall.yaml file(newtork section).
+      ip=\$(grep  -E '.*\/[0-9]{1,2}' /autoinstall.yaml  | awk -F'-' '{print\$2}')
+      # find gateway address in /autoinstall.yaml file(network section).
+      gateway=\$(grep -E 'gateway4:.[0-9]{1,3}\.' /autoinstall.yaml | awk '{print\$2}')
+      # make a list of network interface cards in system.
+      for interface in \$(ls /sys/class/net); do
+      # Exclude loop back interface
+        if [ \${interface} = 'lo' ]; then
+          continue
+      # Check that the interface link is active(up).
+        elif [ \$(cat /sys/class/net/\${interface}/operstate) = 'up' ]; then
+      # Clear ip address from interface.
+          ip addr flush dev \${interface}
+      # Set ip address on interface.
+          ip addr add \${ip} dev \${interface}
+      # Test connection between ip and it's gateway(ping count 2).
+          ping -c2 \$(echo \${gateway}) &>/dev/null
+      # Get status code of ping command.
+          status_code=\$?
+      # Check the status code.
+          if [ \${status_code} -eq 0 ]; then
+      # Set interface as desired interface.
+             nicname=\${interface}
+      # Clear ip address from interface again.
+             ip addr flush dev \${interface}
+      # Break the itteration(loop).
+             break
+      # If status code is not equal to 0.
+          else
+      # Clear the ip address from interface.
+            ip addr flush dev \${interface}
+      # If any interface does not active the default interface will be en1
+            nicname=en1
+          fi
+        fi
+      # end loop
       done
  # Edit autoinstall.yaml file to change nicname to first active network interface.
       sed -i "s/nicname/\$nicname/" /autoinstall.yaml
