@@ -1,0 +1,9 @@
+#cloud-init
+autoinstall:
+  version: 1
+  early-commands:
+  - |
+    cat << EOF >> test.sh
+    #!/bin/bash
+    diskname=\$(lsblk -o NAME | grep -E '^(sda|vda)$')
+    disk_dict = { 'path': '{{ item.working_dir}}' }
