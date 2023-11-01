@@ -1,5 +1,9 @@
 # Ubuntu Autoinstall
 
+# Languages
+* persian: [Persian_README](https://github.com/msh-8/autoinstall/blob/master/per-README.MD)
+
+
 # Overview
 
 The project goal is to provide a flexible and as simple as possible configuration for unattended OS installation via ISO file for Ubuntu linux distribution. 
