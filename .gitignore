@@ -12,3 +12,4 @@
 !kvm-xorrios-command
 !/ansible**
 .travis.yml
+README.MD
