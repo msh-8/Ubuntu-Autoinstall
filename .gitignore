@@ -10,3 +10,5 @@
 !grub-file-bak
 !nocloud-web
 !kvm-xorrios-command
+!ansible/*
+!tasks
