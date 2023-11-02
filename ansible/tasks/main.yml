@@ -4,17 +4,41 @@
 #  debug:
 #    var: item.working_dir
 #  loop: "{{ Global }}"
-- name: template-net
-  template:
-    src: test.j2
-    dest: "/root/msh/ubuntu-autoinstall/test-ansible.yaml"
-    mode: "666"
-  loop: "{{ Global.net }}"
-  when: Global.deploy == 'net'
-- name: template-embed
-  template:
-    src: test.j2
-    dest: "/root/msh/ubuntu-autoinstall/test-ansible.yaml"
-    mode: "666"
-  loop: "{{ Global.embed }}"
-  when: Global.deploy == 'embed'
+#- name: template-net
+#  template:
+#    src: test.j2
+#    dest: "/root/msh/ubuntu-autoinstall/test-ansible.yaml"
+#    mode: "666"
+#  loop: "{{ Global.net }}"
+#  when: Global.deploy == 'net'
+#- name: template-embed
+#  template:
+#    src: test.j2
+#    dest: "/root/msh/ubuntu-autoinstall/test-ansible.yaml"
+#    mode: "666"
+#  loop: "{{ Global.embed }}"
+#  when: Global.deploy == 'embed'
+- name: Create working directory on Ansible controller
+  ansible.builtin.file:
+    path: "{{ Global.Working_dir }}"
+    state: directory
+    mode: "755"
+- name: Check ubuntu ISO exists on Ansible controller
+  ansible.builtin.stat:
+    path: "{{ Global.Working_dir }}/{{ Global.Ubuntu_ISO }}"
+  register: iso_file_check
+- name: Download Ubuntu ISO if does not exist on Ansible controller
+  ansible.builtin.get_url:
+      url: "{{ Global.Ubuntu_ISO_URL }}{{ Global.Ubuntu_ISO }}"
+      dest: "{{ Global.Working_dir }}/{{ Global.Ubuntu_ISO }}"
+      mode: "755"
+  when:
+    - not iso_file_check.stat.exists
+- name: Extract the ubuntu ISO
+  ansible.builtin.command:
+    cmd: "7z -y x {{ Global.Working_dir }}/{{ Global.Ubuntu_ISO }} -o{{ Global.Working_dir }}/iso_source"
+  changed_when: false
+- name: move [BOOT] out of extracted ISO directory
+  ansible.builtin.command:
+    cmd: "mv {{ Global.Working_dir }}/iso_source/'[BOOT]' {{ Global.Working_dir }}/BOOT"
+  changed_when: false

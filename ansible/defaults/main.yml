@@ -1,9 +1,23 @@
 ---
 # defaults file for ansible
+#Global:
+#  deploy: embed
+#  net:  
+#    - working_dir: /home/net
+#  embed:
+#    - working_dir: /home/embed
 Global:
-  deploy: embed
-  net:  
-    - working_dir: /home/net
-  embed:
-    - working_dir: /home/embed
-  
+  Working_dir: "{{ lookup('env','HOME') }}/autoinstall-test"
+  Ubuntu_ISO: jammy-live-server-amd64.iso
+  Ubuntu_ISO_URL: https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/
+
+Nocloud_net:
+    Deploy: true
+    http_ip: 172.20.22.118
+    http_port: 3003
+
+Static_boot_ip:
+    Deploy: true
+    ip: 172.20.22.111
+    subnet: 255.255.255.0
+    gateway: 172.20.22.1
