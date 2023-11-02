@@ -53,7 +53,7 @@
 
 - name: Create user-data
   ansible.builtin.template:
-    src: test-user-data.j2
+    src: user-data.j2
     dest: "{{ Global.Working_dir }}/target-server-files/{{ item.OS.host_name }}/autoinstall/user-data" 
     mode: "666"
   loop: "{{ Host_info }}"

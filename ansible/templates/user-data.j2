@@ -109,10 +109,10 @@ autoinstall:
       version: 2
       ethernets:
         nicname:
-          addresses: [10.10.69.243/24]
-          gateway4: 10.10.69.1
+          addresses: [{{ item.Network.ip }}]
+          gateway4: {{ item.Network.gateway }}
           nameservers:
-            addresses: [8.8.8.8]
+            addresses: [{{ item.Network.DNS }}]
   #packages:
    # - ubuntu-desktop
   storage:
@@ -134,13 +134,19 @@ autoinstall:
     #username: msh    # Change with your desired name
     #password: "$6$.iGAeSIw1ylzBorc$fOUfQkD6PR7QBwXGAE5FYbsEOPfXwpqAEgYRTG/aeMRvzM1LvZJN3QwQFBJ0n9dMpldzGGkhcY6MZowXGQItc/"
   user-data:
-    hostname: "{{ Host_info.OS.hostname }}"
+    hostname: "{{ item.OS.host_name }}"
     users:
-    {% for user in item.Users %}
-      - name: {{ user.username }}
-        password: {{ user.password }}
+    {% for user in item.Users -%}
+    - name: {{ user.username }}
+      password: {{ user.password }}
+    {% endfor -%}
    ssh:
     install-server: yes
   late-commands:
-    - echo 'msh ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/msh # Allow user to run sudo without password
-
+  {% for sudoer in item.Users -%}
+  {% if sudoer.username == 'ansible' -%}
+  - echo 'ansible ALL=(ALL) NOPASSWD: /usr/bin/sh -c */home/ansible/.ansible/tmp/*/AnsiballZ*.py' > /target/etc/sudoers.d/ansible
+  {% else %}
+  - echo '{{ sudoer.username }} ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/{{ sudoer.username }} # Allow user to run sudo without password
+  {% endif %}
+  {% endfor %}
