@@ -40,5 +40,23 @@
   changed_when: false
 - name: move [BOOT] out of extracted ISO directory
   ansible.builtin.command:
-    cmd: "mv {{ Global.Working_dir }}/iso_source/'[BOOT]' {{ Global.Working_dir }}/BOOT"
+    cmd: "mv -u {{ Global.Working_dir }}/iso_source/'[BOOT]' {{ Global.Working_dir }}/BOOT"
   changed_when: false
+- name: Create directory to store user-data and meta-data for
+  ansible.builtin.file:
+    path: "{{ Global.Working_dir }}/target-server-files/{{ item.OS.host_name }}/autoinstall"
+    state: directory
+  loop: "{{ Host_info }}"
+  when: item.Deploy
+  tags: 
+    - user-data-dir
+
+- name: Create user-data
+  ansible.builtin.template:
+    src: test-user-data.j2
+    dest: "{{ Global.Working_dir }}/target-server-files/{{ item.OS.host_name }}/autoinstall/user-data" 
+    mode: "666"
+  loop: "{{ Host_info }}"
+  when: item.Deploy
+  tags:
+    - user_data_temp

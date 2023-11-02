@@ -1,0 +1,5 @@
+users:
+  {% for user in item.Users -%}
+  - username: {{ user.username }}
+    password: {{ user.password }}
+  {% endfor %}

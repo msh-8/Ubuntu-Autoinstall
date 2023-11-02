@@ -21,3 +21,38 @@ Static_boot_ip:
     ip: 172.20.22.111
     subnet: 255.255.255.0
     gateway: 172.20.22.1
+Host_info:
+  - Deploy: true
+    OS:
+      host_name: msh-ubuntu-server1      # Target Ubuntu hostname.
+      Locale: en_US                            # Target Ubuntu OS locale
+      Keyboardlayout: us                       # Terget Ubuntu OS keyboard layout
+      Keyboardvariant: intl 
+    Network:
+      ip: 172.20.22.109/24
+      gateway: 172.20.22.1
+      DNS: 8.8.8.8
+    Users:
+      - username: msh
+        Deploy: true
+        password: "password"
+      - username: ansible
+        Deploy: true
+        password: 123321
+  - Deploy: true                                                    # if True the ISO is going to create.
+    OS:
+      host_name: msh-ubuntu-server2  
+      Locale: en_US                            
+      Keyboardlayout: us                      
+      Keyboardvariant: intl 
+    Network:
+      ip: 172.20.22.110/24
+      gateway: 172.20.22.1
+      DNS: 8.8.8.8
+    Users:
+      - username: msh
+        Deploy: true
+        password: "password"
+      - username: ansible
+        Deploy: true
+        password: 123321
