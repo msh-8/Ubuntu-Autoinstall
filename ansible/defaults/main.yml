@@ -21,6 +21,20 @@ Static_boot_ip:
     ip: 172.20.22.111
     subnet: 255.255.255.0
     gateway: 172.20.22.1
+
+Disk_info:
+  partition_customization:
+    Deploy: false
+    pv0_size: 20G
+    lv0_size: 14G  
+  lv_customization:
+    Deploy: true
+    rootlv_size: 20%
+    varlv_size:  10%
+    var_auditlv_size: 5%
+    homelv_size: 15%
+    swap_size: 8G
+
 Host_info:
   - Deploy: true
     OS:

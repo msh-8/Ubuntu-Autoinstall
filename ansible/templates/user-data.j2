@@ -12,16 +12,7 @@ autoinstall:
         python3 /bios.py
       fi
       ip=\$(grep  -E '.*\/[0-9]{1,2}' /autoinstall.yaml  | awk -F'-' '{print\$2}')
-      #echo ${ip}
-      #ip=\$(echo \${ip} | awk -F[ '{print\$2}')
-      #ip=\$(echo \${ip} | awk -F] '{print\$1}')
       gateway=\$(grep -E 'gateway4:.[0-9]{1,3}\.' /autoinstall.yaml | awk '{print\$2}')
-      echo "###############gateway#############"
-      echo "###############gateway#############"
-      echo ${gateway}
-      echo "###############gateway#############"
-      echo "###############gateway#############"
-      ########
       for interface in \$(ls /sys/class/net); do
         if [ \${interface} = 'lo' ]; then
           continue
@@ -40,8 +31,6 @@ autoinstall:
           fi
       	fi
       done 
-      #########
-      #echo ${nicname}
       sed -i "s/nicname/\$nicname/" /autoinstall.yaml
       EOF
     - |  
@@ -55,9 +44,15 @@ autoinstall:
       fmt1_dic = {'id': str(diskname+'1-format'), 'type': 'format', 'fstype': 'fat32', 'label': 'BOOTEFI', 'volume': str(diskname+'1')}
       part2_dic = {'id': str(diskname+'2'), 'type': 'partition', 'size': '2G', 'device': diskname, 'name': 'boot-partition', 'wipe': 'superblock', 'number': 2}
       fmt2_dic = {'id': str(diskname+'2-format'), 'type': 'format', 'fstype': 'ext4', 'label': 'BOOT', 'volume': str(diskname+'2')}
+      {% if Disk_info.partition_customization.Deploy -%}
+      part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': '{{ Disk_info.partition_customization.pv0_size  }}', 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
+      volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
+      lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '{{ Disk_info.partition_customization.lv0_size  }}', 'wipe': 'superblock'}
+      {% else -%}
       part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
       volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
       lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '10G', 'wipe': 'superblock'}
+      {% endif -%} 
       lv_fmt_dic = {'id': 'lv0-format', 'type': 'format', 'fstype': 'ext4', 'volume': 'lv0', 'preserve': False}
       mnt1_dic = {'id': str(diskname+'1-mount'), 'type': 'mount', 'path': '/boot/efi', 'device': str(diskname+'1-format')}
       mnt2_dic = {'id': str(diskname+'2-mount'), 'type': 'mount', 'path': '/boot', 'device': str(diskname+'2-format')}
@@ -80,9 +75,15 @@ autoinstall:
       part1_dic = {'id': str(diskname+'1'), 'type': 'partition', 'size': '1M', 'device': diskname, 'flag': 'bios_grub', 'wipe': 'superblock', 'number': 1}
       part2_dic = {'id': str(diskname+'2'), 'type': 'partition', 'size': '2G', 'device': diskname, 'name': 'boot-partition', 'wipe': 'superblock', 'number': 2}
       fmt2_dic = {'id': str(diskname+'2-format'), 'type': 'format', 'fstype': 'ext4', 'label': 'BOOT', 'volume': str(diskname+'2')}
+      {% if Disk_info.partition_customization.Deploy -%}
+      part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': '{{ Disk_info.partition_customization.pv0_size }}', 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
+      volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
+      lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '{{ Disk_info.partition_customization.lv0_size }}', 'wipe': 'superblock'}
+      {% else -%}
       part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
       volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
       lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '10G', 'wipe': 'superblock'}
+    {% endif -%} 
       lv_fmt_dic = {'id': 'lv0-format', 'type': 'format', 'fstype': 'ext4', 'volume': 'lv0', 'preserve': False}
       mnt2_dic = {'id': str(diskname+'2-mount'), 'type': 'mount', 'path': '/boot', 'device': str(diskname+'2-format')}
       mnt3_dic = {'id': 'lv0-mount', 'type': 'mount', 'path': '/', 'device': 'lv0-format'}
