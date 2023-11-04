@@ -44,20 +44,41 @@ autoinstall:
       fmt1_dic = {'id': str(diskname+'1-format'), 'type': 'format', 'fstype': 'fat32', 'label': 'BOOTEFI', 'volume': str(diskname+'1')}
       part2_dic = {'id': str(diskname+'2'), 'type': 'partition', 'size': '2G', 'device': diskname, 'name': 'boot-partition', 'wipe': 'superblock', 'number': 2}
       fmt2_dic = {'id': str(diskname+'2-format'), 'type': 'format', 'fstype': 'ext4', 'label': 'BOOT', 'volume': str(diskname+'2')}
-      {% if Disk_info.partition_customization.Deploy -%}
-      part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': '{{ Disk_info.partition_customization.pv0_size  }}', 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
+      {% if Disk_info.Deploy -%}
+      {% if Disk_info.partition_customization.pv0_size == '-1' or Disk_info.partition_customization.pv0_size == -1 -%}
+      part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
+      {% else -%}
+      part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': '{{ Disk_info.partition_customization.pv0_size  }}', 'device': diskname, 'name': 'vg0-partition', 'wipe': 'superblock', 'number': 3}
+      {% endif -%}
       volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
-      lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '{{ Disk_info.partition_customization.lv0_size  }}', 'wipe': 'superblock'}
+      {% set disk_cfg_lst_j2 = ['disk_dic', 'part1_dic', 'fmt1_dic', 'part2_dic', 'fmt2_dic', 'part3_dic', 'volgp_dic'] -%}
+      {% for lv in Disk_info.lv_customization -%}
+      lvm_part_{{ lv.name }}_dic = {'id': '{{ lv.name }}', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': '{{ lv.name }}', 'size': '{{ lv.size }}', 'wipe': 'superblock'}
+      {{ disk_cfg_lst_j2.append('lvm_part_'+lv.name+'_dic') -}}
+      {% endfor -%}
+      {% for fmt in Disk_info.lv_customization -%}
+      lvm_fmt_{{ fmt.name }}_dic = {'id': '{{ fmt.name }}-format', 'type': 'format', 'fstype': 'ext4', 'volume': '{{ fmt.name }}', 'preserve': False}
+      {{ disk_cfg_lst_j2.append('lvm_fmt_'+fmt.name+'_dic') -}}
+      {% endfor -%}
+      mnt1_dic = {'id': str(diskname+'1-mount'), 'type': 'mount', 'path': '/boot/efi', 'device': str(diskname+'1-format')}
+      mnt2_dic = {'id': str(diskname+'2-mount'), 'type': 'mount', 'path': '/boot', 'device': str(diskname+'2-format')}
+      {{ disk_cfg_lst_j2.append('mnt1_dic') -}}
+      {{ disk_cfg_lst_j2.append('mnt2_dic') -}}
+      {% for mnt in Disk_info.lv_customization -%}
+      lvm_mnt_{{ mnt.name }}_dic = {'id': '{{ mnt.name }}-mnt', 'type': 'mount', 'path': '{{ mnt.path }}', 'device': '{{ mnt.name }}-format'}
+      {{ disk_cfg_lst_j2.append('lvm_mnt_'+mnt.name+'_dic') -}}
+      {% endfor -%}
+      disk_cfg_lst = {{ disk_cfg_lst_j2 | regex_replace("\'", "") }}
       {% else -%}
       part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
       volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
       lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '10G', 'wipe': 'superblock'}
-      {% endif -%} 
       lv_fmt_dic = {'id': 'lv0-format', 'type': 'format', 'fstype': 'ext4', 'volume': 'lv0', 'preserve': False}
       mnt1_dic = {'id': str(diskname+'1-mount'), 'type': 'mount', 'path': '/boot/efi', 'device': str(diskname+'1-format')}
       mnt2_dic = {'id': str(diskname+'2-mount'), 'type': 'mount', 'path': '/boot', 'device': str(diskname+'2-format')}
       mnt3_dic = {'id': 'lv0-mount', 'type': 'mount', 'path': '/', 'device': 'lv0-format'}
       disk_cfg_lst = [disk_dic, part1_dic, fmt1_dic, part2_dic, fmt2_dic, part3_dic, volgp_dic, lvm_part_dic, lv_fmt_dic, mnt1_dic, mnt2_dic, mnt3_dic]
+      {% endif -%}
       with open('/autoinstall.yaml', 'r') as reader:
          autoinstall = yaml.safe_load(reader)
       autoinstall['storage'].clear()
@@ -75,19 +96,38 @@ autoinstall:
       part1_dic = {'id': str(diskname+'1'), 'type': 'partition', 'size': '1M', 'device': diskname, 'flag': 'bios_grub', 'wipe': 'superblock', 'number': 1}
       part2_dic = {'id': str(diskname+'2'), 'type': 'partition', 'size': '2G', 'device': diskname, 'name': 'boot-partition', 'wipe': 'superblock', 'number': 2}
       fmt2_dic = {'id': str(diskname+'2-format'), 'type': 'format', 'fstype': 'ext4', 'label': 'BOOT', 'volume': str(diskname+'2')}
-      {% if Disk_info.partition_customization.Deploy -%}
+      {% if Disk_info.Deploy -%}
+      {% if Disk_info.partition_customization.pv0_size == '-1' or Disk_info.partition_customization.pv0_size == -1 -%}
+      part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
+      {% else -%}
       part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': '{{ Disk_info.partition_customization.pv0_size }}', 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
+      {% endif -%}
       volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
-      lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '{{ Disk_info.partition_customization.lv0_size }}', 'wipe': 'superblock'}
+      {% set disk_cfg_lst_j2 = ['disk_dic', 'part1_dic', 'part2_dic', 'fmt2_dic', 'part3_dic', 'volgp_dic'] -%}
+      {% for lv in Disk_info.lv_customization -%}
+      lvm_part_{{ lv.name }}_dic = {'id': '{{ lv.name }}', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': '{{ lv.name }}', 'size': '{{ lv.size }}', 'wipe': 'superblock'}
+      {{ disk_cfg_lst_j2.append('lvm_part_'+lv.name+'_dic') -}}
+      {% endfor -%}
+      {% for fmt in Disk_info.lv_customization -%}
+      lvm_fmt_{{ fmt.name }}_dic = {'id': '{{ fmt.name }}-format', 'type': 'format', 'fstype': 'ext4', 'volume': '{{ fmt.name }}', 'preserve': False}
+      {{ disk_cfg_lst_j2.append('lvm_fmt_'+fmt.name+'_dic') -}}
+      {% endfor -%}
+      mnt2_dic = {'id': str(diskname+'2-mount'), 'type': 'mount', 'path': '/boot', 'device': str(diskname+'2-format')}
+      {{ disk_cfg_lst_j2.append('mnt2_dic') -}}
+      {% for mnt in Disk_info.lv_customization -%}
+      lvm_mnt_{{ mnt.name }}_dic = {'id': '{{ mnt.name }}-mnt', 'type': 'mount', 'path': '{{ mnt.path }}', 'device': '{{ mnt.name }}-format'}
+      {{ disk_cfg_lst_j2.append('lvm_mnt_'+mnt.name+'_dic') -}}
+      {% endfor -%}
+      disk_cfg_lst = {{ disk_cfg_lst_j2 | regex_replace("\'", "") }}
       {% else -%}
       part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
       volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
       lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '10G', 'wipe': 'superblock'}
-    {% endif -%} 
       lv_fmt_dic = {'id': 'lv0-format', 'type': 'format', 'fstype': 'ext4', 'volume': 'lv0', 'preserve': False}
       mnt2_dic = {'id': str(diskname+'2-mount'), 'type': 'mount', 'path': '/boot', 'device': str(diskname+'2-format')}
       mnt3_dic = {'id': 'lv0-mount', 'type': 'mount', 'path': '/', 'device': 'lv0-format'}
       disk_cfg_lst = [disk_dic, part1_dic, part2_dic, fmt2_dic, part3_dic, volgp_dic, lvm_part_dic, lv_fmt_dic, mnt2_dic, mnt3_dic]
+      {% endif -%} 
       with open('/autoinstall.yaml', 'r') as reader:
         autoinstall = yaml.safe_load(reader)
       autoinstall['storage'].clear()
@@ -114,6 +154,8 @@ autoinstall:
           gateway4: {{ item.Network.gateway }}
           nameservers:
             addresses: [{{ item.Network.DNS }}]
+  ssh:
+    install-server: yes
   #packages:
    # - ubuntu-desktop
   storage:
@@ -135,19 +177,18 @@ autoinstall:
     #username: msh    # Change with your desired name
     #password: "$6$.iGAeSIw1ylzBorc$fOUfQkD6PR7QBwXGAE5FYbsEOPfXwpqAEgYRTG/aeMRvzM1LvZJN3QwQFBJ0n9dMpldzGGkhcY6MZowXGQItc/"
   user-data:
+    disable_root: false
     hostname: "{{ item.OS.host_name }}"
     users:
     {% for user in item.Users -%}
     - name: {{ user.username }}
-      password: {{ user.password }}
-    {% endfor -%}
-   ssh:
-    install-server: yes
+      passwd: "{{ user.password }}"
+      primary_group: {{ user.username }}
+      shell: /bin/bash 
+      lock_passwd: false 
+    {%- endfor -%}
+  #
   late-commands:
   {% for sudoer in item.Users -%}
-  {% if sudoer.username == 'ansible' -%}
-  - echo 'ansible ALL=(ALL) NOPASSWD: /usr/bin/sh -c */home/ansible/.ansible/tmp/*/AnsiballZ*.py' > /target/etc/sudoers.d/ansible
-  {% else %}
   - echo '{{ sudoer.username }} ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/{{ sudoer.username }} # Allow user to run sudo without password
-  {% endif %}
-  {% endfor %}
+  {% endfor -%}

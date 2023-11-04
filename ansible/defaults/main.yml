@@ -23,17 +23,13 @@ Static_boot_ip:
     gateway: 172.20.22.1
 
 Disk_info:
+  Deploy: true
   partition_customization:
-    Deploy: false
-    pv0_size: 20G
-    lv0_size: 14G  
+    pv0_size: -1
   lv_customization:
-    Deploy: true
-    rootlv_size: 20%
-    varlv_size:  10%
-    var_auditlv_size: 5%
-    homelv_size: 15%
-    swap_size: 8G
+      - name: rootlv
+        path: /
+        size: 10G 
 
 Host_info:
   - Deploy: true
@@ -43,17 +39,17 @@ Host_info:
       Keyboardlayout: us                       # Terget Ubuntu OS keyboard layout
       Keyboardvariant: intl 
     Network:
-      ip: 172.20.22.109/24
-      gateway: 172.20.22.1
+      ip: 10.10.69.243/24
+      gateway: 10.10.69.1
       DNS: 8.8.8.8
     Users:
       - username: msh
         Deploy: true
-        password: "password"
+        password: $6$i70a4vD5ZQdhaJrR$8DBnKtf8kxPTBeWaXQvWSym93cQpJYDLJh8oAn4z08dZ3RzpmG9hzP2pCVzWAjYheDw/sOuCAQ9jKOO0lU/T.1
       - username: ansible
         Deploy: true
-        password: 123321
-  - Deploy: true                                                    # if True the ISO is going to create.
+        password: $6$9yMZWY.i.urnYIV2$jekh9N5WBpFe94tCU1cXIsiAgQuldGK0vKiygqpZs7SBF6LAbm3RFYgu3JUSNfKgEYwpEcYbRbi/O9KJACVbT.
+  - Deploy: false                                                    # if True the ISO is going to create.
     OS:
       host_name: msh-ubuntu-server2  
       Locale: en_US                            
@@ -66,7 +62,7 @@ Host_info:
     Users:
       - username: msh
         Deploy: true
-        password: "password"
+        password: "$6$i70a4vD5ZQdhaJrR$8DBnKtf8kxPTBeWaXQvWSym93cQpJYDLJh8oAn4z08dZ3RzpmG9hzP2pCVzWAjYheDw/sOuCAQ9jKOO0lU/T.1"
       - username: ansible
         Deploy: true
-        password: 123321
+        password: "$6$9yMZWY.i.urnYIV2$jekh9N5WBpFe94tCU1cXIsiAgQuldGK0vKiygqpZs7SBF6LAbm3RFYgu3JUSNfKgEYwpEcYbRbi/O9KJACVbT."

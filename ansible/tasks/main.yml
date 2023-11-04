@@ -60,3 +60,12 @@
   when: item.Deploy
   tags:
     - user_data_temp
+- name: Create user-data
+  ansible.builtin.template:
+    src: temp-cfg-ls.j2
+    dest: "{{ Global.Working_dir }}/target-server-files/{{ item.OS.host_name }}/autoinstall/user-data" 
+    mode: "666"
+  loop: "{{ Host_info }}"
+  when: item.Deploy
+  tags:
+    - temp_cfg
