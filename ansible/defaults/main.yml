@@ -1,68 +1,75 @@
 ---
 # defaults file for ansible
-#Global:
-#  deploy: embed
-#  net:  
-#    - working_dir: /home/net
-#  embed:
-#    - working_dir: /home/embed
-Global:
-  Working_dir: "{{ lookup('env','HOME') }}/autoinstall-test"
+Global_CFG:
+  Working_Dir: "{{ lookup('env','HOME') }}/autoinstall-test"
   Ubuntu_ISO: jammy-live-server-amd64.iso
+  #Ubuntu_ISO: ubuntu-22.04.3-live-server-amd64.iso
   Ubuntu_ISO_URL: https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/
+  #Ubuntu_ISO_URL: https://releases.ubuntu.com/jammy/
 
-Nocloud_net:
+Nocloud_Net:
+    Deploy: false
+    Http_Ip: 172.20.22.118
+    Http_Port: 3003
+
+Static_Boot_Ip:
     Deploy: true
-    http_ip: 172.20.22.118
-    http_port: 3003
+    Ip: 10.10.69.243
+    Subnet: 255.255.255.0
+    Gateway: 10.10.69.1
 
-Static_boot_ip:
-    Deploy: true
-    ip: 172.20.22.111
-    subnet: 255.255.255.0
-    gateway: 172.20.22.1
-
-Disk_info:
+Disk_CFG:
   Deploy: true
-  partition_customization:
-    pv0_size: -1
-  lv_customization:
-      - name: rootlv
-        path: /
-        size: 10G 
+  Partition_Customization:
+    PV0_Size: -1
+  LV_Customization:
+      - Name: rootlv
+        Path: /
+        Size: 10G 
+      - Name: varlv
+        Path: /var
+        Size: 4G
+      - Name: homelv
+        Path: /home
+        Size: 8G
 
-Host_info:
+Users_CFG:
+    Deploy: true
+    Users:
+      - Deploy: true
+        Username: msh
+        Sudo: false
+        Password: "$6$i70a4vD5ZQdhaJrR$8DBnKtf8kxPTBeWaXQvWSym93cQpJYDLJh8oAn4z08dZ3RzpmG9hzP2pCVzWAjYheDw/sOuCAQ9jKOO0lU/T.1"
+      - Deploy: true
+        Username: ansible
+        Sudo: true
+        Password: "$6$9yMZWY.i.urnYIV2$jekh9N5WBpFe94tCU1cXIsiAgQuldGK0vKiygqpZs7SBF6LAbm3RFYgu3JUSNfKgEYwpEcYbRbi/O9KJACVbT."
+
+Package_CFG:
+  Deploy: true
+  Package_List:
+    - traceroute
+    - htop
+    
+Host_CFG:
   - Deploy: true
     OS:
-      host_name: msh-ubuntu-server1      # Target Ubuntu hostname.
+      Host_Name: msh-ubuntu-server1      # Target Ubuntu hostname.
       Locale: en_US                            # Target Ubuntu OS locale
       Keyboardlayout: us                       # Terget Ubuntu OS keyboard layout
       Keyboardvariant: intl 
     Network:
-      ip: 10.10.69.243/24
-      gateway: 10.10.69.1
-      DNS: 8.8.8.8
-    Users:
-      - username: msh
-        Deploy: true
-        password: $6$i70a4vD5ZQdhaJrR$8DBnKtf8kxPTBeWaXQvWSym93cQpJYDLJh8oAn4z08dZ3RzpmG9hzP2pCVzWAjYheDw/sOuCAQ9jKOO0lU/T.1
-      - username: ansible
-        Deploy: true
-        password: $6$9yMZWY.i.urnYIV2$jekh9N5WBpFe94tCU1cXIsiAgQuldGK0vKiygqpZs7SBF6LAbm3RFYgu3JUSNfKgEYwpEcYbRbi/O9KJACVbT.
+      Ip: 10.10.69.243/24
+      Gateway: 10.10.69.1
+      DNS: 8.8.8.8 
   - Deploy: false                                                    # if True the ISO is going to create.
     OS:
-      host_name: msh-ubuntu-server2  
+      Host_Name: msh-ubuntu-server2  
       Locale: en_US                            
       Keyboardlayout: us                      
       Keyboardvariant: intl 
     Network:
-      ip: 172.20.22.110/24
-      gateway: 172.20.22.1
-      DNS: 8.8.8.8
-    Users:
-      - username: msh
-        Deploy: true
-        password: "$6$i70a4vD5ZQdhaJrR$8DBnKtf8kxPTBeWaXQvWSym93cQpJYDLJh8oAn4z08dZ3RzpmG9hzP2pCVzWAjYheDw/sOuCAQ9jKOO0lU/T.1"
-      - username: ansible
-        Deploy: true
-        password: "$6$9yMZWY.i.urnYIV2$jekh9N5WBpFe94tCU1cXIsiAgQuldGK0vKiygqpZs7SBF6LAbm3RFYgu3JUSNfKgEYwpEcYbRbi/O9KJACVbT."
+      Ip: 172.20.22.110/24
+      Gateway: 172.20.22.1
+      DNS: 
+        - 8.8.8.8

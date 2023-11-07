@@ -1,7 +1,0 @@
-test
-{% if Disk_info.partition_customization.pv0_size == '-1' or Disk_info.partition_customization.pv0_size == -1 -%}
-'size': -1
-{% else -%}
-'size': '{{ Disk_info.partition_customization.pv0_size }}'
-{% endif %}
-test

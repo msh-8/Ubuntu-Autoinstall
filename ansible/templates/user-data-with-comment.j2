@@ -1,75 +1,102 @@
 #cloud-config
 autoinstall:
   version: 1
+   # Execute commands before run autoinstall.yaml file.
   early-commands:
+   # Create a file to run some bash scripts
     - |
       cat << EOF >> /test.sh
       #!/bin/bash
-      #diskname=\$(lsblk -o NAME | grep -E 'sda$|vda$')
+      # Detect bios or grub boot loader.
       if [ -e "/sys/firmware/efi"  ]; then
+      # Run grub.py to prepare autoinstall.yaml file based on the grub bootloader storage configurations.
         python3 /grub.py
       else
+      # Run grub.py to prepare autoinstall.yaml file based on the bios bootloader storage configurations.
         python3 /bios.py
       fi
-      ip=\$(grep  -E '.*\/[0-9]{1,2}' /autoinstall.yaml  | awk -F'-' '{print\$2}')
-      gateway=\$(grep -E 'gateway4:.[0-9]{1,3}\.' /autoinstall.yaml | awk '{print\$2}')
-      for interface in \$(ls /sys/class/net); do
-        if [ \${interface} = 'lo' ]; then
+      ip=\$(grep  -E '.*\/[0-9]{1,2}' /autoinstall.yaml  | awk -F'-' '{print\$2}')       # Find the ip address in /autoinstall.yaml file(newtork section).
+      gateway=\$(grep -E 'gateway4:.[0-9]{1,3}\.' /autoinstall.yaml | awk '{print\$2}')  # Find the ip address in /autoinstall.yaml file(newtork section).
+      for interface in \$(ls /sys/class/net); do    # Find the ip address in /autoinstall.yaml file(newtork section).
+        if [ \${interface} = 'lo' ]; then           # Find the ip address in /autoinstall.yaml file(newtork section).
           continue
-        elif [ \$(cat /sys/class/net/\${interface}/operstate) = 'up' ]; then
-          ip addr flush dev \${interface}
-          ip addr add \${ip} dev \${interface}
-          ping -c2 \$(echo \${gateway}) &>/dev/null
-          status_code=\$?
-          if [ \${status_code} -eq 0 ]; then
-            nicname=\${interface}
-            ip addr flush dev \${interface}
-            break
-          else
-            ip addr flush dev \${interface}
-            nicname=en1
+        elif [ \$(cat /sys/class/net/\${interface}/operstate) = 'up' ]; then    # Find the ip address in /autoinstall.yaml file(newtork section).
+          ip addr flush dev \${interface}                          # Clear ip address from interface.
+          ip addr add \${ip} dev \${interface}                     # Set ip address on interface.
+          ping -c2 \$(echo \${gateway}) &>/dev/null                # Test connection between ip and it's gateway(ping count 2).
+          status_code=\$?                                          # Get status code of ping command.
+          if [ \${status_code} -eq 0 ]; then                       # Check the status code.
+            nicname=\${interface}                                  # Set interface as desired interface.
+            ip addr flush dev \${interface}                        # Clear ip address from interface again.
+            break                                                  # Break the itteration(loop).
+          else                                                     # If status code is not equal to 0.
+            ip addr flush dev \${interface}                        # Clear the ip address from interface.
+            nicname=en1                                            # If any interface does not active the default interface will be en1
           fi
       	fi
-      done 
-      sed -i "s/nicname/\$nicname/" /autoinstall.yaml
+      done                                                         # End loop.
+      sed -i "s/nicname/\$nicname/" /autoinstall.yaml              # Edit autoinstall.yaml file to change nicname to first active network interface.
       EOF
-    - |  
-      cat << EOF > /grub.py
-      #!/usr/bin/python3
-      import yaml
-      import subprocess
-      diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")
+    - |                                         
+      cat << EOF > /grub.py                                        # Create grub.py file to prepare autoinstall.yaml file for grub bootloader.
+      #!/usr/bin/python3                                            
+      import yaml                                                  # Import yaml module to change the autoinstall.yaml
+      import subprocess                                            # import subporcess to find current block device name. (sda or vda)
+      diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")      # Check the disk blocks are vda or sda.
+      # Create a dictionary to prepare partition table of disk (note = path: /dev/sda or vda , grub_device: False).
       disk_dic = {'id': diskname, 'type': 'disk', 'wipe': 'superblock', 'ptable': 'gpt', 'path': str('/dev/'+diskname), 'grub_device': False}
+      # Create a dictionary to Install uEFI partiotion on disk (for /boot/efi || note = flag: boot, grub_device: True)
       part1_dic = {'id': str(diskname+'1'), 'type': 'partition', 'size': '800M', 'device': diskname, 'flag': 'boot', 'wipe': 'superblock', 'grub_device': True, 'number': 1}
+      # Create a dictionary to make file system on GRUB partition (fstype: fat32)
       fmt1_dic = {'id': str(diskname+'1-format'), 'type': 'format', 'fstype': 'fat32', 'label': 'BOOTEFI', 'volume': str(diskname+'1')}
+      # Create a dictionary to prepare boot partition on disk (sda2 or vda2 for /boot)
       part2_dic = {'id': str(diskname+'2'), 'type': 'partition', 'size': '2G', 'device': diskname, 'name': 'boot-partition', 'wipe': 'superblock', 'number': 2}
+      # Create a dictionary to make file system on boot partition.
       fmt2_dic = {'id': str(diskname+'2-format'), 'type': 'format', 'fstype': 'ext4', 'label': 'BOOT', 'volume': str(diskname+'2')}
+      # Check disk_cfg is enabled to create custome disk partition.
       {% if Disk_CFG.Deploy == true -%}
+      # Convert '-1'(string type) to integer type. 
       {% if Disk_CFG.Partition_Customization.PV0_Size == '-1' or Disk_CFG.Partition_Customization.PV0_Size == -1 -%}
+      # Create a dictionary to Install LVM partition on disk (sda3 or vda3 for /dev/mapper/vg0)
       part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
       {% else -%}
+      # Create a dictionary based on PV0_Size to Install volume group(vg) on LVM partition (create /dev/mapper/vg0 || type: lvm_volgroup)
       part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': '{{ Disk_CFG.Partition_Customization.PV0_Size  }}', 'device': diskname, 'name': 'vg0-partition', 'wipe': 'superblock', 'number': 3}
       {% endif -%}
+     # Create a dictionary to Install volume group(vg) on LVM partition (create /dev/mapper/vg0 || type: lvm_volgroup)
       volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
+     # Create disk_cfg_lst_j2 to keep the above dictionaries, because they are static.
       {% set disk_cfg_lst_j2 = ['disk_dic', 'part1_dic', 'fmt1_dic', 'part2_dic', 'fmt2_dic', 'part3_dic', 'volgp_dic'] -%}
+     # Create lv dictionary to prepare Logical Volume based on LV_Customization list.
       {% for lv in Disk_CFG.LV_Customization -%}
+     # Create dictionary for each lv based on LV_Customization list.
       lvm_part_{{ lv.Name }}_dic = {'id': '{{ lv.Name }}', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': '{{ lv.Name }}', 'size': '{{ lv.Size }}', 'wipe': 'superblock'}
+     # Append created above dictionary to the disk_cfg_lst_j2
       {{ disk_cfg_lst_j2.append('lvm_part_'+lv.Name+'_dic') -}}
       {% endfor -%}
+     # Create format dictionary to prepare and formating the created lovgical volumes based on LV_Customization list.
       {% for fmt in Disk_CFG.LV_Customization -%}
+     # Create dictionary for each format type of lv based on LV_Customization list.
       lvm_fmt_{{ fmt.Name }}_dic = {'id': '{{ fmt.Name }}-format', 'type': 'format', 'fstype': 'ext4', 'volume': '{{ fmt.Name }}', 'preserve': False}
+     # Append created above dictionary to the disk_cfg_lst_j2.
       {{ disk_cfg_lst_j2.append('lvm_fmt_'+fmt.Name+'_dic') -}}
       {% endfor -%}
+     # Create mnt directory to mount each formated logical volume in specified path.
       mnt1_dic = {'id': str(diskname+'1-mount'), 'type': 'mount', 'path': '/boot/efi', 'device': str(diskname+'1-format')}
       mnt2_dic = {'id': str(diskname+'2-mount'), 'type': 'mount', 'path': '/boot', 'device': str(diskname+'2-format')}
+     # Append above two dictionaries to the disk_cfg_lst_j2.append, because they are static. 
       {{ disk_cfg_lst_j2.append('mnt1_dic') -}}
       {{ disk_cfg_lst_j2.append('mnt2_dic') -}}
+     # Create mnt directory to mount each formated logical volume in specified path based on LV_Customization list.
       {% for mnt in Disk_CFG.LV_Customization -%}
       lvm_mnt_{{ mnt.Name }}_dic = {'id': '{{ mnt.Name }}-mnt', 'type': 'mount', 'path': '{{ mnt.Path }}', 'device': '{{ mnt.Name }}-format'}
+     # Append created dictionary to disk_cfg_lst_j2.append based on LV_Customization list.
       {{ disk_cfg_lst_j2.append('lvm_mnt_'+mnt.Name+'_dic') -}}
       {% endfor -%}
+     # Print out disk_cfg_lst_j2 to the destination yaml file.
       disk_cfg_lst = {{ disk_cfg_lst_j2 | regex_replace("\'", "") }}
       {% else -%}
+     # Create bellow dictionaries and disk_cfg_lst if above conditions does not meet.
       part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
       volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
       lvm_part_dic = {'id': 'lv0', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'lv0', 'size': '10G', 'wipe': 'superblock'}
@@ -79,20 +106,22 @@ autoinstall:
       mnt3_dic = {'id': 'lv0-mount', 'type': 'mount', 'path': '/', 'device': 'lv0-format'}
       disk_cfg_lst = [disk_dic, part1_dic, fmt1_dic, part2_dic, fmt2_dic, part3_dic, volgp_dic, lvm_part_dic, lv_fmt_dic, mnt1_dic, mnt2_dic, mnt3_dic]
       {% endif -%}
-      with open('/autoinstall.yaml', 'r') as reader:
-         autoinstall = yaml.safe_load(reader)
-      autoinstall['storage'].clear()
-      autoinstall['storage'].update({'config' : disk_cfg_lst})
-      with open('/autoinstall.yaml', 'w') as writer:
+      with open('/autoinstall.yaml', 'r') as reader:                          # Open the /autoinstall.yaml file
+         autoinstall = yaml.safe_load(reader)                                 
+      autoinstall['storage'].clear()                                          # Clear the Storage dictionary to create new one.
+      autoinstall['storage'].update({'config' : disk_cfg_lst})                # Create new storage dictionary based on the disk_cfg_lst. 
+      with open('/autoinstall.yaml', 'w') as writer:                          # Write the new configuratios on the /autoinstall.yaml file.
         yaml.dump(autoinstall, writer)
       EOF
     - |  
-      cat << EOF > /bios.py
-      #!/usr/bin/python3
-      import yaml
-      import subprocess
+      cat << EOF > /bios.py                                             # the bellow section is same as grub section with a different partion.#
+      #!/usr/bin/python3                                                # Difference is boot partition:                                       #
+      import yaml                                                       # For BIOS boot size is 1M and without neither format nor mount point.#
+      import subprocess                                                 # But, for EFI have 800M boot partition and need mount to /boot/efi.  #
       diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")
+      # differeces (grub_device: true in BOIOS) (grub_device: false in EFI)
       disk_dic = {'id': diskname, 'type': 'disk', 'wipe': 'superblock', 'ptable': 'gpt', 'path': str('/dev/'+diskname), 'grub_device': True}
+      # difference (size: 2M and flag:bios_grub in BIOS) (size: 800M and flag: boot in EFI , grub_device: true) 
       part1_dic = {'id': str(diskname+'1'), 'type': 'partition', 'size': '1M', 'device': diskname, 'flag': 'bios_grub', 'wipe': 'superblock', 'number': 1}
       part2_dic = {'id': str(diskname+'2'), 'type': 'partition', 'size': '2G', 'device': diskname, 'name': 'boot-partition', 'wipe': 'superblock', 'number': 2}
       fmt2_dic = {'id': str(diskname+'2-format'), 'type': 'format', 'fstype': 'ext4', 'label': 'BOOT', 'volume': str(diskname+'2')}
@@ -135,16 +164,18 @@ autoinstall:
       with open('/autoinstall.yaml', 'w') as writer:
         yaml.dump(autoinstall, writer)
       EOF
+    # Make grub.py, bios.py and test.sh file excecutable.
     - chmod +x /grub.py
     - chmod +x /bios.py
     - chmod +x /test.sh
+    # Run test.sh file
     - bash /test.sh
   locale: en_US
   keyboard:
     layout: us
     variant: intl
   apt:
-    fallback: continue-anyway   # it does not interrupt the autoinstall procidure if there is no any internet connection.
+    fallback: continue-anyway   # It does not interrupt the autoinstall procidure if there is no any internet connection. Do not change it unless you know what are you doing.
   network:
     network:
       version: 2
@@ -154,25 +185,22 @@ autoinstall:
           gateway4: {{ item.Network.Gateway }}
           nameservers:
             addresses:
-            {% if item.Network.DNS  | type_debug == 'list' -%}
+            # Create a list of multiple dns addresses based on Host_CFG.Network.DNS list.
             {% for nsaddr in item.Network.DNS -%}
               - {{ nsaddr }}
             {% endfor -%}
-            {% else -%}
-             - {{ item.Network.DNS }}
-            {% endif -%}
 #
   ssh:
     install-server: yes
-  {% if ( (Package_CFG.Deploy == true) and 
-        (Package_CFG.Package_List | length > 0) ) -%}
+  {% if ( (Package_CFG.Deploy == true) and                       # Check that the desired packages are listed in variable file. 
+        (Package_CFG.Package_List | length > 0) ) -%}            # The packages will be set on the yaml file if they are defined on the variable file.
   packages:
   {% for pkgs in Package_CFG.Package_List %}
   - {{ pkgs }}
   {% endfor -%}
   {% endif -%}
   storage:
-     config:
+     config:                                              # The following storage configuration is writen just for sample. This will not be used on the installation procidure.
       - {ptable: gpt, path: /dev/sda, preserve: false, name: '', id: disk-sda, type: disk, grub_device: false}
       - {device: disk-sda, size: 800M, wipe: superblock, flag: boot, number: 1, preserve: false, grub_device: true, id: partition-0, type: partition}
       - {fstype: fat32, volume: partition-0, preserve: false, id: format-0, type: format}
@@ -185,19 +213,20 @@ autoinstall:
       - {path: /, device: format-2, id: mount-2, type: mount} 
       - {path: /boot, device: format-1, id: mount-1, type: mount} 
       - {path: /boot/efi, device: format-0, id: mount-0, type: mount}
-  {% if ( (Users_CFG.Deploy == true) and
-     (Users_CFG.Users | length > 0) ) -%}
-  late-commands:
-  {% for sudoer in Users_CFG.Users -%}
+  {% if ( (Users_CFG.Deploy == true) and                # Check that the desired packages are listed in variable file.
+     (Users_CFG.Users | length > 0) ) -%}               # The users will be set on the yaml file if they are defined on the variable file.
+  late-commands:                                        # If any user defined as sudo the late-command will be set on the yaml file.
+  {% for sudoer in Users_CFG.Users -%}                  
   {% if sudoer.Sudo == true -%}
+  # The sudo user will be execute any command as root privilege without password.
   - echo '{{ sudoer.Username }} ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/{{ sudoer.Username }} # Allow user to run sudo without password
   {% endif -%}
   {% endfor -%}
   user-data:
     disable_root: false
-    hostname: "{{ item.OS.Host_Name }}"  
+    hostname: "{{ item.OS.Host_Name }}"                # Set the hostname of target os in yaml file.
     users:
-      {% for user in Users_CFG.Users -%}
+      {% for user in Users_CFG.Users -%}               # Users that supposed to be created on the target OS will be setting on yaml file.
       - name: {{ user.Username }}
         passwd: {{ user.Password }}
         shell: /bin/bash 

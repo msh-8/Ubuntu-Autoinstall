@@ -1,71 +1,151 @@
 ---
 # tasks file for ansible
-#- name: test
-#  debug:
-#    var: item.working_dir
-#  loop: "{{ Global }}"
-#- name: template-net
-#  template:
-#    src: test.j2
-#    dest: "/root/msh/ubuntu-autoinstall/test-ansible.yaml"
-#    mode: "666"
-#  loop: "{{ Global.net }}"
-#  when: Global.deploy == 'net'
-#- name: template-embed
-#  template:
-#    src: test.j2
-#    dest: "/root/msh/ubuntu-autoinstall/test-ansible.yaml"
-#    mode: "666"
-#  loop: "{{ Global.embed }}"
-#  when: Global.deploy == 'embed'
+
 - name: Create working directory on Ansible controller
   ansible.builtin.file:
-    path: "{{ Global.Working_dir }}"
+    path: "{{ Global_CFG.Working_Dir }}"
     state: directory
     mode: "755"
+
 - name: Check ubuntu ISO exists on Ansible controller
   ansible.builtin.stat:
-    path: "{{ Global.Working_dir }}/{{ Global.Ubuntu_ISO }}"
+    path: "{{ Global_CFG.Working_Dir }}/{{ Global_CFG.Ubuntu_ISO }}"
   register: iso_file_check
+
 - name: Download Ubuntu ISO if does not exist on Ansible controller
   ansible.builtin.get_url:
-      url: "{{ Global.Ubuntu_ISO_URL }}{{ Global.Ubuntu_ISO }}"
-      dest: "{{ Global.Working_dir }}/{{ Global.Ubuntu_ISO }}"
+      url: "{{ Global_CFG.Ubuntu_ISO_URL }}{{ Global_CFG.Ubuntu_ISO }}"
+      dest: "{{ Global_CFG.Working_Dir }}/{{ Global_CFG.Ubuntu_ISO }}"
       mode: "755"
   when:
     - not iso_file_check.stat.exists
+
 - name: Extract the ubuntu ISO
   ansible.builtin.command:
-    cmd: "7z -y x {{ Global.Working_dir }}/{{ Global.Ubuntu_ISO }} -o{{ Global.Working_dir }}/iso_source"
+    cmd: "7z -y x {{ Global_CFG.Working_Dir }}/{{ Global_CFG.Ubuntu_ISO }} -o{{ Global_CFG.Working_Dir }}/iso_source"
   changed_when: false
+
 - name: move [BOOT] out of extracted ISO directory
   ansible.builtin.command:
-    cmd: "mv -u {{ Global.Working_dir }}/iso_source/'[BOOT]' {{ Global.Working_dir }}/BOOT"
+    cmd: "mv -u {{ Global_CFG.Working_Dir }}/iso_source/'[BOOT]' {{ Global_CFG.Working_Dir }}/BOOT"
   changed_when: false
+
 - name: Create directory to store user-data and meta-data for
   ansible.builtin.file:
-    path: "{{ Global.Working_dir }}/target-server-files/{{ item.OS.host_name }}/autoinstall"
+    path: "{{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}/autoinstall"
     state: directory
-  loop: "{{ Host_info }}"
+  loop: "{{ Host_CFG }}"
   when: item.Deploy
   tags: 
     - user-data-dir
 
-- name: Create user-data
+- name: Create user-data for each host to sepcified directory.
   ansible.builtin.template:
     src: user-data.j2
-    dest: "{{ Global.Working_dir }}/target-server-files/{{ item.OS.host_name }}/autoinstall/user-data" 
+    dest: "{{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}/autoinstall/user-data" 
     mode: "666"
-  loop: "{{ Host_info }}"
+  loop: "{{ Host_CFG }}"
   when: item.Deploy
   tags:
     - user_data_temp
 - name: Create user-data
   ansible.builtin.template:
-    src: temp-cfg-ls.j2
-    dest: "{{ Global.Working_dir }}/target-server-files/{{ item.OS.host_name }}/autoinstall/user-data" 
+    src: user-data.j2
+    dest: www/user-data
     mode: "666"
-  loop: "{{ Host_info }}"
+  loop: "{{ Host_CFG }}"
   when: item.Deploy
   tags:
     - temp_cfg
+- name: test-tepmlate
+  ansible.builtin.template:
+    src: test.j2
+    dest: www/test-temp
+    mode: "666"
+  loop: "{{ Host_CFG }}"
+  when: item.Deploy
+  tags:
+    - test-tmp
+
+- name: Copy grub.cfg file into ISO extraction directory
+  ansible.builtin.template:
+    src: grub-cfg.j2
+    dest: "{{ Global_CFG.Working_Dir }}/iso_source/boot/grub/grub.cfg"
+    mode: "666"
+  tags: 
+    - cp_grub
+
+- name: Create an empty meta-data file
+  ansible.builtin.file:
+    path: "{{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}/autoinstall/meta-data"
+    state: touch
+    mode: "666"
+  loop: "{{ Host_CFG }}"
+  when: item.Deploy
+
+- name: Create custom ubuntu ISO-cdrom
+  ansible.builtin.command: 
+    cmd:  "xorriso -as mkisofs -r \
+          -V 'Ubuntu 22.04 LTS AUTO (EFIBIOS)' \
+          -o {{ Global_CFG.Working_Dir }}/{{ item.OS.Host_Name }}.iso \
+          --grub2-mbr {{ Global_CFG.Working_Dir }}/BOOT/1-Boot-NoEmul.img  \
+          -partition_offset 16 \
+          --mbr-force-bootable \
+          -append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b {{ Global_CFG.Working_Dir }}/BOOT/2-Boot-NoEmul.img \
+          -appended_part_as_gpt \
+          -iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
+          -c '/boot.catalog' \
+          -b '/boot/grub/i386-pc/eltorito.img' \
+          -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
+          -eltorito-alt-boot \
+          -e '--interval:appended_partition_2:::' \
+          -no-emul-boot \
+          {{ Global_CFG.Working_Dir }}/iso_source {{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}" 
+  loop: "{{ Host_CFG }}"
+  when: 
+    - item.Deploy
+    - Nocloud_Net.Deploy != true
+
+- name: Create custom ubuntu ISO-nscloud_net
+  ansible.builtin.command: 
+    cmd:  "xorriso -as mkisofs -r \
+          -V 'Ubuntu 22.04 LTS AUTO (EFIBIOS)' \
+          -o {{ Global_CFG.Working_Dir }}/{{ item.OS.Host_Name }}.iso \
+          --grub2-mbr {{ Global_CFG.Working_Dir }}/BOOT/1-Boot-NoEmul.img  \
+          -partition_offset 16 \
+          --mbr-force-bootable \
+          -append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b {{ Global_CFG.Working_Dir }}/BOOT/2-Boot-NoEmul.img \
+          -appended_part_as_gpt \
+          -iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
+          -c '/boot.catalog' \
+          -b '/boot/grub/i386-pc/eltorito.img' \
+          -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
+          -eltorito-alt-boot \
+          -e '--interval:appended_partition_2:::' \
+          -no-emul-boot \
+          {{ Global_CFG.Working_Dir }}/iso_source " 
+  loop: "{{ Host_CFG }}"
+  when: 
+    - item.Deploy
+    - Nocloud_Net.Deploy
+
+- name: remove BOOT directory
+  ansible.builtin.command:
+    cmd: "rm -rf {{ Global_CFG.Working_Dir }}/BOOT"
+  changed_when: false
+
+- name: copy file from linux to vcenter
+  community.vmware.vsphere_copy:
+    hostname: 172.20.22.120
+    username: administrator@vsphere.local
+    password: C10ud_SHM!
+    validate_certs: False
+    datacenter: "SHM Datacenter"
+    src: "/root/autoinstall-test/msh-ubuntu-server1.iso"
+    datastore: "FUJITSU DX80"
+    path: "/ISO/Linux/msh-ubuntu-server1.iso"
+  register: debug
+- name: remove iso_source directory to free space
+  ansible.builtin.command:
+    cmd: "rm -rf {{ Global_CFG.Working_Dir }}/iso_source"
+  changed_when: false

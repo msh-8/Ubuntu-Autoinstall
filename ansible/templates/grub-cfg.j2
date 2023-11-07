@@ -1,20 +1,20 @@
-set timeout=0
+set timeout=10
 
 loadfont unicode
 
 set menu_color_normal=white/black
 set menu_color_highlight=black/light-gray
-{% if Nocloud_net.Deploy %}
-{% if Static_boot_ip.Deploy %}
+{% if Nocloud_Net.Deploy  == true %}
+{% if Static_Boot_Ip.Deploy  == true %}
 menuentry "Autoinstall Ubuntu Server" {
     set gfxpayload=keep
-    linux   /casper/vmlinuz ip={{ Static_boot_ip.ip }}::{{ Static_boot_ip.gateway }}:{{ Static_boot_ip.subnet }} quiet autoinstall ds=nocloud-net\;s=http://{{ Nocloud_net.http_ip }}:{{ Nocloud_net.http_port }}/  ---
+    linux   /casper/vmlinuz ip={{ Static_Boot_Ip.Ip }}::{{ Static_Boot_Ip.Gateway }}:{{ Static_Boot_Ip.Subnet }} quiet autoinstall ds=nocloud-net\;s=http://{{ Nocloud_Net.Http_Ip }}:{{ Nocloud_Net.Http_Port }}/  ---
     initrd  /casper/initrd
 }
 {% else %}
 menuentry "Autoinstall Ubuntu Server" {
     set gfxpayload=keep
-    linux   /casper/vmlinuz ip=dhcp quiet autoinstall ds=nocloud-net\;s=http://{{ Nocloud_net.http_ip }}:{{ Nocloud_net.http_port }}/  ---
+    linux   /casper/vmlinuz ip=dhcp quiet autoinstall ds=nocloud-net\;s=http://{{ Nocloud_Net.Http_Ip }}:{{ Nocloud_Net.Http_Port }}/  ---
     initrd  /casper/initrd
 }
 {% endif %}
