@@ -404,9 +404,10 @@ fi                  # end if ({% if Nocloud_Net.Deploy  == true %})
       sudo python3 -m pip install ansible
       git clone https://github.com/msh-8/autoinstall.git
 ### Run playbook
-#### Please change the variables as your requirements at first.
-      ansible-playbook autoinstall.yaml
-
+**First of all, please change the variables as your requirements.**
+```
+ansible-playbook autoinstall.yaml
+```
 
 # Aditional links
 The following links could help you to understand the customization the Ubuntu with cloud-init:
