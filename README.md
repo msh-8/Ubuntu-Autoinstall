@@ -75,10 +75,19 @@ If you set **Deploy** to false, the default parameters will be setting.
 
 ### Users_CFG:
 The desired users and their sudo permission will be confiured on **Users_CFG** section.
-* **Users**         : List of users
-    * **Username**    : username
-    * **
+* **Users**           : List of users
+    * **Username**    : Username
+    * **Sudo**        : Make a user as a sudoer(Boolean=> True/False)
+    * **Password**    : Hashed_password(openssl passwd -6) 
 
+### Package_CFG:
+The list of packages supposed to be intalled on target server(s).<br>
+Note: the usage of this parameter need an Internet connection to get packages from repositories.
+* If there is no any Internet connection please change value of **Deploy** to false.
+* **Package_List**      : The list of packages.
+     ```
+     - htop                : The name of package.
+     - traceroute          : The name of package.
 # Usage
 
     ansible-playbook -i hosts site.yaml
