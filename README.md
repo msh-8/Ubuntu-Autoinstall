@@ -1,7 +1,7 @@
 # Ubuntu Autoinstall
 
-# Languages
-* persian: Ongoing
+[comment]: <>  (# Languages)
+[comment]: <> (* persian: Ongoing)
 
 
 # Overview
