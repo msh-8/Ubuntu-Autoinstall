@@ -8,12 +8,12 @@ Global_CFG:
   Ubuntu_ISO_URL: https://releases.ubuntu.com/jammy/
 
 Nocloud_Net:
-    Deploy: false
+    Deploy: true
     Http_Ip: 172.20.22.118
     Http_Port: 3003
 
 Static_Boot_Ip:
-    Deploy: true
+    Deploy: false
     Ip: 10.10.69.243
     Subnet: 255.255.255.0
     Gateway: 10.10.69.1

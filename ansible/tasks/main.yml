@@ -30,14 +30,23 @@
     cmd: "mv -u {{ Global_CFG.Working_Dir }}/iso_source/'[BOOT]' {{ Global_CFG.Working_Dir }}/BOOT"
   changed_when: false
 
-- name: Create directory to store user-data and meta-data for
+- name: Create directory to store user-data and meta-data per each target server
   ansible.builtin.file:
     path: "{{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}/autoinstall"
     state: directory
   loop: "{{ Host_CFG }}"
-  when: item.Deploy
+  when: 
+    - item.Deploy
+    - not Nocloud_Net.Deploy
   tags: 
     - user-data-dir
+
+- name: Create www directory to store user-data and meta-data to use http server.
+  ansible.builtin.file:
+    path: "{{ Global_CFG.Working_Dir }}/www"
+    state: directory
+    mode: "755"
+  when: Nocloud_Net.Deploy
 
 - name: Create user-data for each host to sepcified directory.
   ansible.builtin.template:
@@ -45,27 +54,23 @@
     dest: "{{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}/autoinstall/user-data" 
     mode: "666"
   loop: "{{ Host_CFG }}"
-  when: item.Deploy
+  when: 
+    - item.Deploy
+    - not Nocloud_Net.Deploy
   tags:
     - user_data_temp
-- name: Create user-data
+      
+- name: Create user-data for each target server to use on http server.
   ansible.builtin.template:
     src: user-data.j2
-    dest: www/user-data
+    dest: "{{ Global_CFG.Working_Dir }}/www/user-data_{{ item.OS.Host_Name }}"
     mode: "666"
   loop: "{{ Host_CFG }}"
-  when: item.Deploy
+  when: 
+    - item.Deploy
+    - Nocloud_Net.Deploy
   tags:
     - temp_cfg
-- name: test-tepmlate
-  ansible.builtin.template:
-    src: test.j2
-    dest: www/test-temp
-    mode: "666"
-  loop: "{{ Host_CFG }}"
-  when: item.Deploy
-  tags:
-    - test-tmp
 
 - name: Copy grub.cfg file into ISO extraction directory
   ansible.builtin.template:
@@ -75,13 +80,23 @@
   tags: 
     - cp_grub
 
-- name: Create an empty meta-data file
+- name: Create an empty meta-data file for ISO file.
   ansible.builtin.file:
     path: "{{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}/autoinstall/meta-data"
     state: touch
     mode: "666"
   loop: "{{ Host_CFG }}"
-  when: item.Deploy
+  when: 
+    - item.Deploy
+    - not Nocloud_Net.Deploy
+
+- name: Create an empty meta-data file for http server.
+  ansible.builtin.file:
+    path: "{{ Global_CFG.Working_Dir }}/www/meta-data"
+    state: touch
+    mode: "666"
+  when: 
+    - Nocloud_Net.Deploy
 
 - name: Create custom ubuntu ISO-cdrom
   ansible.builtin.command: 
@@ -104,7 +119,7 @@
   loop: "{{ Host_CFG }}"
   when: 
     - item.Deploy
-    - Nocloud_Net.Deploy != true
+    - not Nocloud_Net.Deploy
 
 - name: Create custom ubuntu ISO-nscloud_net
   ansible.builtin.command: 
@@ -134,17 +149,7 @@
     cmd: "rm -rf {{ Global_CFG.Working_Dir }}/BOOT"
   changed_when: false
 
-- name: copy file from linux to vcenter
-  community.vmware.vsphere_copy:
-    hostname: 172.20.22.120
-    username: administrator@vsphere.local
-    password: C10ud_SHM!
-    validate_certs: False
-    datacenter: "SHM Datacenter"
-    src: "/root/autoinstall-test/msh-ubuntu-server1.iso"
-    datastore: "FUJITSU DX80"
-    path: "/ISO/Linux/msh-ubuntu-server1.iso"
-  register: debug
+
 - name: remove iso_source directory to free space
   ansible.builtin.command:
     cmd: "rm -rf {{ Global_CFG.Working_Dir }}/iso_source"
