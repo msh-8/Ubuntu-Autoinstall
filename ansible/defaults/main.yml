@@ -2,10 +2,10 @@
 # defaults file for ansible
 Global_CFG:
   Working_Dir: "{{ lookup('env','HOME') }}/autoinstall-test"
-  Ubuntu_ISO: jammy-live-server-amd64.iso
-  #Ubuntu_ISO: ubuntu-22.04.3-live-server-amd64.iso
-  Ubuntu_ISO_URL: https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/
-  #Ubuntu_ISO_URL: https://releases.ubuntu.com/jammy/
+  #Ubuntu_ISO: jammy-live-server-amd64.iso
+  Ubuntu_ISO: ubuntu-22.04.3-live-server-amd64.iso
+  #Ubuntu_ISO_URL: https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/
+  Ubuntu_ISO_URL: https://releases.ubuntu.com/jammy/
 
 Nocloud_Net:
     Deploy: false
