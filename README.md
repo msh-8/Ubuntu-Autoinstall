@@ -13,8 +13,13 @@ The Ansible playbooks contain ready to use installation templates for various me
 # Features
 
 Templates for unattended installation included in the playbook:
-* Embeded cloud-init file on the ISO file.(make ISO file per each change.)
-* Cloud-init file over http web server.(make ISO once and change cloud-init file on-demand.)
+* Create user-data and meta-data file for each target-server on "/cdrom/autoinstall/" path. (when Nocloud_net is not Deployed)
+* Create user-data and meta-data file for each target-server on "www/" path.(when Nocloud_net is Deployed)
+* Auto detect EFI and BIOS system.
+* Create an approprate partition table based on EFI or BIOS requirement.
+* Assign desired IP address when target server will boot to fetch user-data and meta-data file from http server.(Static_Boot_CFG).
+* Detect block device name such as sda or vda automatically.
+* Detect active(up) interface and assign the ip address to first interface. (it is tested on a physical server with multiple interfaces.)
 
 # Caveats
 
