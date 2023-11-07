@@ -11,7 +11,8 @@
 !nocloud-web
 !kvm-xorrios-command
 /ansible/files**
-!/ansible**
+!/ansible/**
 .travis.yml
 .README.md
-**files/**
+**/ansible/files/
+ansible/files
