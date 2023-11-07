@@ -33,7 +33,25 @@ and have a base knowledge about autoinstall files for the required OS:
 
 # Description
 
-ongoing
+## Playbook structure
+* Global configuration variables defined at [ansible/defaults/main.yml](ansible/defaults/main.yml)
+* Template for user-data file at [ansible/templates/user-data.j2](ansible/templates/user-data.j2)
+* Template for grub file at [ansible/templates/grub-cfg.j2]
+
+## Variables
+The main key of variables is "Deploy". If you want to use any variable in templates, you have to change the Deploy to true boolean value.
+## Host_CFG
+
+# Usage
+
+    ansible-playbook -i hosts site.yaml
+
+### See also example [hosts](hosts) & [site_vars.yml](site_vars.yml)
+
+### An example to setup network boot services for CentOS 7
+
+    # configure epel release
+    yum install http://mirror.yandex.ru/epel/7/x86_64/e/epel-release-7-10.noarch.rpm
 
 # Aditional links
 The following links could help you to understand the customization the Ubuntu with cloud-init:
