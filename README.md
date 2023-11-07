@@ -1,7 +1,7 @@
 # Ubuntu Autoinstall
 
-# Languages
-* persian: Ongoing
+[comment]: <>  (# Languages)
+[comment]: <> (* persian: Ongoing)
 
 
 # Overview
@@ -13,8 +13,15 @@ The Ansible playbooks contain ready to use installation templates for various me
 # Features
 
 Templates for unattended installation included in the playbook:
-* Embeded cloud-init file on the ISO file.(make ISO file per each change.)
-* Cloud-init file over http web server.(make ISO once and change cloud-init file on-demand.)
+* Creating user-data and meta-data file for each target-server on "/cdrom/autoinstall/" path. (when Nocloud_net is not Deployed)
+* Creating user-data and meta-data file for each target-server on "www/" path.(when Nocloud_net is Deployed)
+* Auto-detecting EFI and BIOS system.
+* Creating an approprate partition table based on EFI or BIOS requirement.
+* Assigning desired IP address when target server will boot to fetch user-data and meta-data file from http server.(Static_Boot_CFG).
+* Detecting block device name such as sda or vda automatically.
+* Auto-detecting active(up) interface and assign the ip to first interface. (it is tested on a physical server with multiple interfaces.)
+* Logical volume customization.
+* Creating multiple users either as sudo or normal.
 
 # Caveats
 
@@ -404,9 +411,10 @@ fi                  # end if ({% if Nocloud_Net.Deploy  == true %})
       sudo python3 -m pip install ansible
       git clone https://github.com/msh-8/autoinstall.git
 ### Run playbook
-#### Please change the variables as your requirements at first.
-      ansible-playbook autoinstall.yaml
-
+**First of all, please change the variables as your requirements.**
+```
+ansible-playbook autoinstall.yaml
+```
 
 # Aditional links
 The following links could help you to understand the customization the Ubuntu with cloud-init:
