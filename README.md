@@ -40,23 +40,44 @@ and have a base knowledge about autoinstall files for the required OS:
 
 ## Variables
 The main key of variables is "Deploy". If you want to use any variable in templates, you have to change the Deploy to true boolean value.
-### Global_CFG
+### Global_CFG:
 * **Working_DIR**     : All files will be located here
 * **Ubuntu_ISO**      : Ubuntu ISO name (it will be downloaded.)
 * **Ubuntu_ISO_URL**  : The url of the ISO file.
 
-### Nocloud_Net
+### Nocloud_Net:
 Configuration of nocloud_net should be defined here. If you want to target server get user-data config file over http, configure parameters.
 
 * **Http_Ip**      : IP of the http server that publish the user-data and meta-data file.
 * **Http_Port**    : the port of the web server
 
-### Static_Boot_IP
+### Static_Boot_IP:
 If you want to set ip static on the target server when system is booting, please configure the parameters.
 If **Deploy** set to false use DHCP.
 
-* **IP**      :
+* **IP**      : IP address of target system over boot procedure.
+* **Subnet**  : Subnet of IP address.
+* **Gateway** : Gateway to find the route of http web.
 
+### Disk_CFG:
+The customization of block, filesystem and mount point placed here. If you want to change disk layer such as root, boot, home, etc, you will be able to set the following parameters.
+If you set **Deploy** to false, the default parameters will be setting.
+* **Partition_customization**  : Partition customization section.
+    * **Pv0_Size**                 : Size of the pv(physical volume) to use on LVM.
+* **LV_Customization**         : The list of the mount points(LVM).
+    * **Name**                 : Name of the LV in the target server.
+    * **Path**                 : Mount point path of LV.   
+    * **Size**                 : Size of LV \
+          Note: If you want to use the whole size of the disk for an LV, you can set -1 for size. For example:<br>
+            Size: -1<br>
+          Otherwize:<br>
+            Size: 10**G**<br>
+
+### Users_CFG:
+The desired users and their sudo permission will be confiured on **Users_CFG** section.
+* **Users**         : List of users
+    * **Username**    : username
+    * **
 
 # Usage
 
