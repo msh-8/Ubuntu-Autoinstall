@@ -258,7 +258,70 @@ autoinstall:                                       # Subiquity realize that it i
 This file will create grub.cfg file on the "/cdrom/bood/grub/" path. It create the boot requirements on ISO.
 Note: For some limitation in template language I do not write any comment on this file. If you intend to know about comments you should view the [grub-cfg-with-comment.j2](ansible/templates/grub-cfg-with-comment.j2) (**Do not use this file.**)
 ```
-comment
+set timeout=10                                                               # set time out for boot page
+
+loadfont unicode                                                             # font setting
+
+set menu_color_normal=white/black                                            # color of boot page.
+set menu_color_highlight=black/light-gray                                    # color of boot page.
+{% if Nocloud_Net.Deploy  == true %}                                         # check the Nocloud_net is selected in the variables.
+{% if Static_Boot_Ip.Deploy  == true %}                                      # check the Static_Boot_IP is selected in the variables.
+menuentry "Autoinstall Ubuntu Server" {                                      # menu entry for autoinstall
+    set gfxpayload=keep
+   # The following line will be configure nocloud-net setting for autoinstall.(it depend on your variables settings.)
+   # The live os will get user-data and meta-data files of the your web server.
+   # The live os will not search CD-Rom to find user-data and meta-data files.
+   # The following setting is required a web server that serve the related files(user-data and meta-data).
+   # The live os need an established connection to the web server. It means that you need set static ip address at system boot to connect to the web server. 
+   # For example:
+          # linux   /casper/vmlinuz ip=192.168.1.100::192.168.1.1:255.255.255.0 quiet autoinstall ds=nocloud-net\;s=http://192.169.1.10:8080/  ---
+    linux   /casper/vmlinuz ip={{ Static_Boot_Ip.Ip }}::{{ Static_Boot_Ip.Gateway }}:{{ Static_Boot_Ip.Subnet }} quiet autoinstall ds=nocloud-net\;s=http://{{ Nocloud_Net.Http_Ip }}:{{ Nocloud_Net.Http_Port }}/  ---
+    initrd  /casper/initrd
+}
+{% else %}                                                                  # otherwize
+menuentry "Autoinstall Ubuntu Server" {                                     # if the static IP is not selected bu nocloud_net is selected, DHCP will set as follows:
+    set gfxpayload=keep
+   # The following line will be configure nocloud-net setting for autoinstall.(it depend on your variables settings.)
+   # The live os will get user-data and meta-data files of the your web server.
+   # The live os will not search CD-Rom to find user-data and meta-data files.
+   # The following setting is required a web server that serve the related files(user-data and meta-data).
+   # The live os need an established connection to the web server. It means that you need DHCP-server to assign ip address to system boot. 
+   # For example:
+    linux   /casper/vmlinuz ip=dhcp quiet autoinstall ds=nocloud-net\;s=http://{{ Nocloud_Net.Http_Ip }}:{{ Nocloud_Net.Http_Port }}/  ---
+    initrd  /casper/initrd
+}
+{% endif %}                                                                   # endif ({% if Static_Boot_Ip.Deploy  == true %})
+{% else %}                                                                    # if neither boot_ip nor nocloud_net is selected to deploy.
+menuentry "Autoinstall Ubuntu Server" {
+    set gfxpayload=keep
+    linux   /casper/vmlinuz quiet autoinstall ds=nocloud\;s=/cdrom/autoinstall/  ---
+    initrd  /casper/initrd
+}
+{% endif %}
+menuentry "Try or Install Ubuntu Server" {
+        set gfxpayload=keep
+        linux   /casper/vmlinuz  ---
+        initrd  /casper/initrd
+}
+menuentry "Ubuntu Server with the HWE kernel" {
+        set gfxpayload=keep
+        linux   /casper/hwe-vmlinuz  ---
+        initrd  /casper/hwe-initrd
+}
+grub_platform
+if [ "$grub_platform" = "efi" ]; then
+menuentry 'Boot from next volume' {
+        exit 1
+}
+menuentry 'UEFI Firmware Settings' {
+        fwsetup
+}
+else
+menuentry 'Test memory' {
+        linux16 /boot/memtest86+.bin
+}
+fi                  # end if ({% if Nocloud_Net.Deploy  == true %})
+
 ```
 
 # Usage
