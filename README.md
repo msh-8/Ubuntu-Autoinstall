@@ -40,7 +40,23 @@ and have a base knowledge about autoinstall files for the required OS:
 
 ## Variables
 The main key of variables is "Deploy". If you want to use any variable in templates, you have to change the Deploy to true boolean value.
-## Host_CFG
+### Global_CFG
+* **Working_DIR**     : All files will be located here
+* **Ubuntu_ISO**      : Ubuntu ISO name (it will be downloaded.)
+* **Ubuntu_ISO_URL**  : The url of the ISO file.
+
+### Nocloud_Net
+Configuration of nocloud_net should be defined here. If you want to target server get user-data config file over http, configure parameters.
+
+* **Http_Ip**      : IP of the http server that publish the user-data and meta-data file.
+* **Http_Port**    : the port of the web server
+
+### Static_Boot_IP
+If you want to set ip static on the target server when system is booting, please configure the parameters.
+If **Deploy** set to false use DHCP.
+
+* **IP**      :
+
 
 # Usage
 
