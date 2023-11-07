@@ -1,15 +1,2 @@
-*
+**
 !.gitignore
-!user-data
-!playbooks
-!vmware-copy.yaml
-!grub-cdrom.cfg  
-!grub-http.cfg
-!kvm-command
-!xorriso-command
-!grub-file-bak
-!nocloud-web
-!kvm-xorrios-command
-!/ansible/templates/**
-.travis.yml
-.README.md
