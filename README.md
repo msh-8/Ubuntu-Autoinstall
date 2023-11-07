@@ -1,7 +1,7 @@
 # Ubuntu Autoinstall
 
 # Languages
-* persian: [Persian_README](https://github.com/msh-8/autoinstall/blob/master/per-README.MD)
+* persian: Ongoing
 
 
 # Overview
@@ -395,15 +395,18 @@ fi                  # end if ({% if Nocloud_Net.Deploy  == true %})
 ```
 
 # Usage
+### Install requirements
+      sudo apt-get install git 
+      sudo apt-get install p7zip-full
+      sudo apt-get install xorriso
+      sudo apt-get install python3
+      sudo apt-get install python3-pip
+      sudo python3 -m pip install ansible
+      git clone https://github.com/msh-8/autoinstall.git
+### Run playbook
+#### Please change the variables as your requirements at first.
+      ansible-playbook autoinstall.yaml
 
-    ansible-playbook -i hosts site.yaml
-
-
-
-### An example to setup network boot services for CentOS 7
-
-    # configure epel release
-    yum install http://mirror.yandex.ru/epel/7/x86_64/e/epel-release-7-10.noarch.rpm
 
 # Aditional links
 The following links could help you to understand the customization the Ubuntu with cloud-init:
