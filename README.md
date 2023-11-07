@@ -34,9 +34,10 @@ and have a base knowledge about autoinstall files for the required OS:
 # Description
 
 ## Playbook structure
-* Global configuration variables defined at [ansible/defaults/main.yml](ansible/defaults/main.yml)
+* Tasks are setting at [ansible/tasks/main.yml](ansible/tasks/main.yml)
+* variables are defined at [ansible/defaults/main.yml](ansible/defaults/main.yml)
 * Template for user-data file at [ansible/templates/user-data.j2](ansible/templates/user-data.j2)
-* Template for grub file at [ansible/templates/grub-cfg.j2]
+* Template for grub file at [ansible/templates/grub-cfg.j2](ansible/templates/grub-cfg.j2)
 
 ## Variables
 The main key of variables is "Deploy". If you want to use any variable in templates, you have to change the Deploy to true boolean value.
@@ -86,8 +87,46 @@ Note: the usage of this parameter need an Internet connection to get packages fr
 * If there is no any Internet connection please change value of **Deploy** to false.
 * **Package_List**      : The list of packages.
      ```
-     - htop                : The name of package.
-     - traceroute          : The name of package.
+     - htop              : The name of package.
+     - traceroute        : The name of package.
+
+### Host_CFG:
+To configure OS of the target server use this section. Each list item has a **Deploy** variable to define whether the target ISO will be created for this host(target server) or not.
+* **OS**                  : The general parameter like hostaname, keyboard layout and Locale.
+   * **Host_Name**        : Host name for target server.
+   * **Locale**           : Locale
+   * **Keyboardlayout**   : Keyboard layout
+   * **Keyboardvariant**  : Keyboard variant
+* **Network**             : Network Parameters
+   * **Ip**               : IP address/CIDR (192.168.1.1/24)
+   * **Gateway**          : gateway ip
+   * **DNS**              : address or addresses of nameservers. ( **List** )
+     ```
+       - 8.8.8.8
+       - 4.2.2.1
+## Templates
+### user-data.j2
+This file will create the user-data file include required cloud-init configuration.
+Note: For some limitation in template language I do not write any comment on this file. If you intend to know about comments you should view the [user-data-with-comment.j2](ansible/templates/user-data-with-comment.j2). (**Do not use this file.**)
+```
+#cloud-config                                      # Type of file
+autoinstall:                                       # Subiquity realize that it is autoinstall configuration
+  version: 1                                       # Version of autoinstall configuration
+  early-commands:                                  # put any command that should be ran before starting autoinstall.
+    - |                                            # Array of commands
+      cat << EOF >> /test.sh                       # Create an script in "/" path.
+      #!/bin/bash                                  # Shibang
+      if [ -e "/sys/firmware/efi"  ]; then         # Check the target server boot is EFI or BIOS.
+
+```
+
+### grub-cfg.j2
+This file will create grub.cfg file on the "/cdrom/bood/grub/" path. It create the boot requirements on ISO.
+Note: For some limitation in template language I do not write any comment on this file. If you intend to know about comments you should view the [grub-cfg-with-comment.j2](ansible/templates/grub-cfg-with-comment.j2) (**Do not use this file.**)
+```
+comment
+```
+
 # Usage
 
     ansible-playbook -i hosts site.yaml
