@@ -209,6 +209,48 @@ autoinstall:                                       # Subiquity realize that it i
       with open('/autoinstall.yaml', 'w') as writer:                 # write and close the /autoinstall.yaml
         yaml.dump(autoinstall, writer)                               
       EOF
+    - |                                                              # the third early-command
+#############################################################################################################################
+#                                                    NOTE:                                                                    #
+# The following scripts will create a file as bios.py name in the "/" paht.                                                   #
+# The python code is used here to edit and configure storage section of/autoinstall.yaml.                                     #
+# The storage configuration for BIOS system will be handeled with the following python codes.                                 #
+# The code will select block device name such as sda or vda by its own automatically.                                         #
+# The following code descrition is same as grub.py code with only different partition table                                   #
+ #############################################################################################################################
+      cat << EOF > /bios.py
+      #!/usr/bin/python3
+      import yaml
+      import subprocess
+      diskname = subprocess.getoutput("lsblk -o NAME | grep -E 'sda$|vda$'")
+      disk_dic = {'id': diskname, 'type': 'disk', 'wipe': 'superblock', 'ptable': 'gpt', 'path': str('/dev/'+diskname), 'grub_device': True}
+      part1_dic = {'id': str(diskname+'1'), 'type': 'partition', 'size': '1M', 'device': diskname, 'flag': 'bios_grub', 'wipe': 'superblock', 'number': 1}
+      part2_dic = {'id': str(diskname+'2'), 'type': 'partition', 'size': '2G', 'device': diskname, 'name': 'boot-partition', 'wipe': 'superblock', 'number': 2}
+      fmt2_dic = {'id': str(diskname+'2-format'), 'type': 'format', 'fstype': 'ext4', 'label': 'BOOT', 'volume': str(diskname+'2')}
+      part3_dic = {'id': str(diskname+'3'), 'type': 'partition', 'size': -1, 'device': diskname, 'name': 'root-partition', 'wipe': 'superblock', 'number': 3}
+      volgp_dic = {'id': 'vg0', 'devices': [str(diskname+'3')], 'type': 'lvm_volgroup', 'name': 'vg0'}
+      lvm_part_rootlv_dic = {'id': 'rootlv', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'rootlv', 'size': '10G', 'wipe': 'superblock'}
+      lvm_part_varlv_dic = {'id': 'varlv', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'varlv', 'size': '4G', 'wipe': 'superblock'}
+      lvm_part_homelv_dic = {'id': 'homelv', 'type': 'lvm_partition', 'volgroup': 'vg0', 'name': 'homelv', 'size': '8G', 'wipe': 'superblock'}
+      lvm_fmt_rootlv_dic = {'id': 'rootlv-format', 'type': 'format', 'fstype': 'ext4', 'volume': 'rootlv', 'preserve': False}
+      lvm_fmt_varlv_dic = {'id': 'varlv-format', 'type': 'format', 'fstype': 'ext4', 'volume': 'varlv', 'preserve': False}
+      lvm_fmt_homelv_dic = {'id': 'homelv-format', 'type': 'format', 'fstype': 'ext4', 'volume': 'homelv', 'preserve': False}
+      mnt2_dic = {'id': str(diskname+'2-mount'), 'type': 'mount', 'path': '/boot', 'device': str(diskname+'2-format')}
+      lvm_mnt_rootlv_dic = {'id': 'rootlv-mnt', 'type': 'mount', 'path': '/', 'device': 'rootlv-format'}
+      lvm_mnt_varlv_dic = {'id': 'varlv-mnt', 'type': 'mount', 'path': '/var', 'device': 'varlv-format'}
+      lvm_mnt_homelv_dic = {'id': 'homelv-mnt', 'type': 'mount', 'path': '/home', 'device': 'homelv-format'}
+      disk_cfg_lst = [disk_dic, part1_dic, part2_dic, fmt2_dic, part3_dic, volgp_dic, lvm_part_rootlv_dic, lvm_part_varlv_dic, lvm_part_homelv_dic, lvm_fmt_rootlv_dic, lvm_fmt_varlv_dic, lvm_fmt_homelv_dic, mnt2_dic, lvm_mnt_rootlv_dic, lvm_mnt_varlv_dic, lvm_mnt_homelv_dic]
+      with open('/autoinstall.yaml', 'r') as reader:
+        autoinstall = yaml.safe_load(reader)
+      autoinstall['storage'].clear()
+      autoinstall['storage'].update({'config' : disk_cfg_lst})
+      with open('/autoinstall.yaml', 'w') as writer:
+        yaml.dump(autoinstall, writer)
+      EOF                                                       # end of the cat
+    - chmod +x /grub.py                                         # make executable /grub.py file.
+    - chmod +x /bios.py                                         # make executable /bios.py file.
+    - chmod +x /test.sh                                         # make executable /test.sh file.
+    - bash /test.sh                                             # execute the test.sh file.
 
 ```
 
@@ -223,7 +265,7 @@ comment
 
     ansible-playbook -i hosts site.yaml
 
-### See also example [hosts](hosts) & [site_vars.yml](site_vars.yml)
+
 
 ### An example to setup network boot services for CentOS 7
 
