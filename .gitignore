@@ -10,9 +10,6 @@
 !grub-file-bak
 !nocloud-web
 !kvm-xorrios-command
-/ansible/files**
-!/ansible/**
+!/ansible/templates/**
 .travis.yml
 .README.md
-**/ansible/files/
-ansible/files
