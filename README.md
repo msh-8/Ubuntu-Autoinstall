@@ -251,7 +251,77 @@ autoinstall:                                       # Subiquity realize that it i
     - chmod +x /bios.py                                         # make executable /bios.py file.
     - chmod +x /test.sh                                         # make executable /test.sh file.
     - bash /test.sh                                             # execute the test.sh file.
-
+  locale: en_US                                                 # locale
+  keyboard:                                                     # Keyboard section
+    layout: us                                                  # keyboard layout
+    variant: intl                                               # keyboard variant
+  apt:                                                          # Apt section
+    fallback: continue-anyway                                   # it does not interrupt the autoinstall procidure if there is no any internet connection.
+  network:                                                      # network section. The following section write exactly on netplan file.
+    network:                                                    # network configuration
+      version: 2   
+      ethernets:      
+        nicname:                                                # It will be changed with early-commands that handeled by early-commands
+          addresses: [{{ item.Network.Ip }}]                    # ip address of the target system (it depends on your variable file.)
+          gateway4: {{ item.Network.Gateway }}                  # ip address of gateway (it depends on your variable file.)
+          nameservers:                                          # DNS section
+            addresses:                                          # name server addresses
+            {% if item.Network.DNS  | type_debug == 'list' -%}  # it check the DNS in variable file is setting with multiple address.
+            {% for nsaddr in item.Network.DNS -%}               # iterate on the DNS list
+              - {{ nsaddr }}                                    # set each item of the list
+            {% endfor -%}                                       # end for
+            {% else -%}                                         # if DNS in variable file is setting with a single address.
+             - {{ item.Network.DNS }}                           # set the DNS value.
+            {% endif -%}                                        # end if  {% if item.Network.DNS  | type_debug == 'list' -%} 
+#
+  ssh:                                                         # ssh configuration section
+    install-server: yes                                        # install ssh server(sshd.service)
+  {% if ( (Package_CFG.Deploy == true) and                     # Check that the Package_CFG is selected to deploy.
+        (Package_CFG.Package_List | length > 0) ) -%}
+  packages:                                                    # package configuration section.
+                                                               # Note: this section requires the Internet connection and
+                                                               # if is selected to deploy, but there is no any internet connection
+                                                               # then the installation porcess will be failed.
+  {% for pkgs in Package_CFG.Package_List %}                   # iterate on the Package_List to set the items.
+  - {{ pkgs }}
+  {% endfor -%}                                                # end for 
+  {% endif -%}                                                 # end if ({% if ( (Package_CFG.Deploy == true) and)
+# Storage configuration section
+# Note: The following configuration is seeting only as a sample configuration. It will be changed with grub.py or bios.py scripts after running early-commands.
+  storage:
+     config:
+      - {ptable: gpt, path: /dev/sda, preserve: false, name: '', id: disk-sda, type: disk, grub_device: false}
+      - {device: disk-sda, size: 800M, wipe: superblock, flag: boot, number: 1, preserve: false, grub_device: true, id: partition-0, type: partition}
+      - {fstype: fat32, volume: partition-0, preserve: false, id: format-0, type: format}
+      - {device: disk-sda, size: 2G, wipe: superblock, number: 2, preserve: false, offset: 801112064, id: partition-1, type: partition}
+      - {fstype: ext4, volume: partition-1, preserve: false, id: format-1, type: format}
+      - {device: disk-sda, size: -1, wipe: superblock, number: 3, preserve: false, id: partition-2, type: partition}
+      - {name: ubuntu-vg, devices: [partition-2], preserve: false, id: lvm_volgroup-0, type: lvm_volgroup}
+      - {name: ubuntu-lv, volgroup: lvm_volgroup-0, size: 10G, wipe: superblock, preserve: false, path: /dev/ubuntu-vg/ubuntu-lv, id: lvm_partition-0, type: lvm_partition}
+      - {fstype: ext4, volume: lvm_partition-0, preserve: false, id: format-2, type: format}
+      - {path: /, device: format-2, id: mount-2, type: mount}
+      - {path: /boot, device: format-1, id: mount-1, type: mount}
+      - {path: /boot/efi, device: format-0, id: mount-0, type: mount}
+  {% if ( (Users_CFG.Deploy == true) and        # check the Users.CFG.Deploy is selected to deplpy.
+     (Users_CFG.Users | length > 0) ) -%}
+#
+  late-commands:                                # this section will run the commands when autoinstall finished. and commands will execute on the target server.
+  {% for sudoer in Users_CFG.Users -%}          # iterate on the User_CFG.Users list to check sudo value for each user. 
+  {% if sudoer.Sudo == true -%}                 # check the user is selected as sudoer.
+  - echo '{{ sudoer.Username }} ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/{{ sudoer.Username }} # Allow user to run sudo without password
+  {% endif -%}                                  # end if ({% if sudoer.Sudo == true -%})
+  {% endfor -%}                                 # end for
+  user-data:                                    # user-data section. This section is used here to setup users.
+    disable_root: false                         # enable root user
+    hostname: "{{ item.OS.Host_Name }}"         # set hostname for target server.
+    users:                                      # users section
+      {% for user in Users_CFG.Users -%}        # iterate on the users lists to select items.   
+      - name: {{ user.Username }}               # set username
+        passwd: {{ user.Password }}             # set password (hashed password)
+        shell: /bin/bash                        # set shell for each user.
+        lock_passwd: false                      # disable lock password
+      {% endfor -%}                             # end for {% for user in Users_CFG.Users -%}
+  {% endif -%}                                  # end if   (**{% if ( (Users_CFG.Deploy == true) and ...) 
 ```
 
 ### grub-cfg.j2
