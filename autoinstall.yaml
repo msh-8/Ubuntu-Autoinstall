@@ -1,5 +1,4 @@
 ---
-# comment
 -
   hosts: 
     - localhost
