@@ -1,2 +1,5 @@
 ansible/.travis.yml
 ansible/.README.md
+ansible/defaults/variables.yml
+test.yaml
+user-data-test.yaml

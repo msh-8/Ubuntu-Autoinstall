@@ -1,22 +1,22 @@
 ---
 # defaults file for ansible
 Global_CFG:
-  Working_Dir: "{{ lookup('env','HOME') }}/autoinstall-test"
-  #Ubuntu_ISO: jammy-live-server-amd64.iso
-  Ubuntu_ISO: ubuntu-22.04.3-live-server-amd64.iso
-  #Ubuntu_ISO_URL: https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/
-  Ubuntu_ISO_URL: https://releases.ubuntu.com/jammy/
+  Working_Dir: "{{ lookup('env','HOME') }}/ubuntu-autoinstall"
+  Ubuntu_ISO: jammy-live-server-amd64.iso
+  #Ubuntu_ISO: ubuntu-22.04.3-live-server-amd64.iso
+  Ubuntu_ISO_URL: https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/
+  #Ubuntu_ISO_URL: https://releases.ubuntu.com/jammy/
 
 Nocloud_Net:
-    Deploy: true
+    Deploy: false
     Http_Ip: 172.20.22.118
     Http_Port: 3003
 
 Static_Boot_Ip:
     Deploy: false
-    Ip: 10.10.69.243
+    Ip: 172.20.22.109
     Subnet: 255.255.255.0
-    Gateway: 10.10.69.1
+    Gateway: 172.20.22.220
 
 Disk_CFG:
   Deploy: true
@@ -26,12 +26,18 @@ Disk_CFG:
       - Name: rootlv
         Path: /
         Size: 10G 
-      - Name: varlv
-        Path: /var
-        Size: 4G
       - Name: homelv
         Path: /home
-        Size: 8G
+        Size: 5G
+      - Name: varlv
+        Path: /var
+        Size: 5G
+      - Name: varloglv
+        Path: /var/log
+        Size: 3G
+Apt_CFG:
+  Deploy: true
+  Url: https://ir.ubuntu.sindad.cloud/ubuntu/
 
 Users_CFG:
     Deploy: true
@@ -54,14 +60,14 @@ Package_CFG:
 Host_CFG:
   - Deploy: true
     OS:
-      Host_Name: msh-ubuntu-server1      # Target Ubuntu hostname.
+      Host_Name: ibm-blade-server-209     # Target Ubuntu hostname.
       Locale: en_US                            # Target Ubuntu OS locale
       Keyboardlayout: us                       # Terget Ubuntu OS keyboard layout
       Keyboardvariant: intl 
     Network:
-      Ip: 10.10.69.243/24
-      Gateway: 10.10.69.1
-      DNS: 8.8.8.8 
+      Ip: 172.20.22.109/24
+      Gateway: 172.20.22.220
+      DNS: 8.8.8.8
   - Deploy: false                                                    # if True the ISO is going to create.
     OS:
       Host_Name: msh-ubuntu-server2  

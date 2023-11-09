@@ -14,6 +14,7 @@ autoinstall:
       ip=\$(grep  -E '.*\/[0-9]{1,2}' /autoinstall.yaml  | awk -F'-' '{print\$2}')
       gateway=\$(grep -E 'gateway4:.[0-9]{1,3}\.' /autoinstall.yaml | awk '{print\$2}')
       for interface in \$(ls /sys/class/net); do
+        #ip link set \${interface} up
         if [ \${interface} = 'lo' ]; then
           continue
         elif [ \$(cat /sys/class/net/\${interface}/operstate) = 'up' ]; then
@@ -145,6 +146,46 @@ autoinstall:
     variant: intl
   apt:
     fallback: continue-anyway   # it does not interrupt the autoinstall procidure if there is no any internet connection.
+    {% if Apt_CFG.Deploy == true -%}
+    primary:
+      - arches: [amd64, i386]
+        #uri: http://us.archive.ubuntu.com/ubuntu
+        uri: {{ Apt_CFG.Url }}
+    security:
+    - arches:
+      - amd64
+      - i386
+      #uri: http://security.ubuntu.com/ubuntu/
+      uri: {{ Apt_CFG.Url }}
+    - arches:
+      - s390x
+      - arm64
+      - armhf
+      - powerpc
+      - ppc64el
+      - riscv64
+      uri: http://ports.ubuntu.com/ubuntu-ports
+    {% else -%}
+    primary:
+      - arches: [amd64, i386]
+        #uri: http://us.archive.ubuntu.com/ubuntu
+        uri: https://ubuntu.shatel.ir/ubuntu/
+    security:
+    - arches:
+      - amd64
+      - i386
+      #uri: http://security.ubuntu.com/ubuntu/
+      uri: https://ubuntu.shatel.ir/ubuntu/
+    - arches:
+      - s390x
+      - arm64
+      - armhf
+      - powerpc
+      - ppc64el
+      - riscv64
+      uri: http://ports.ubuntu.com/ubuntu-ports
+    {% endif -%}
+#
   network:
     network:
       version: 2
