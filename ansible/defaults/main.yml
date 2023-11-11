@@ -1,81 +1,88 @@
 ---
 # defaults file for ansible
-Global_CFG:
-  Working_Dir: "{{ lookup('env','HOME') }}/ubuntu-autoinstall"
-  Ubuntu_ISO: jammy-live-server-amd64.iso
-  #Ubuntu_ISO: ubuntu-22.04.3-live-server-amd64.iso
-  Ubuntu_ISO_URL: https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/
-  #Ubuntu_ISO_URL: https://releases.ubuntu.com/jammy/
+Global_CFG:                                                                                               # Global configurations.
+  Working_Dir: "{{ lookup('env','HOME') }}/ubuntu-autoinstall"                                            # desired Working Directory
+  Ubuntu_ISO: jammy-live-server-amd64.iso                                                                 # ISO Name
+  #Ubuntu_ISO: ubuntu-22.04.3-live-server-amd64.iso                                                       
+  Ubuntu_ISO_URL: https://cdimage.ubuntu.com/ubuntu-server/jammy/daily-live/current/                      # ISO URL
+  #Ubuntu_ISO_URL: https://releases.ubuntu.com/jammy/                                           
 
-Nocloud_Net:
-    Deploy: false
-    Http_Ip: 172.20.22.118
-    Http_Port: 3003
+Nocloud_Net:                                                                                              # Nocloud_Net Dictionary
+    Deploy: false                                                                                         # will be deployed if enabled.
+    Http_Ip: 192.168.1.118                                                                                # http web server ip for getting user-data and meta-data file.
+    Http_Port: 3003                                                                                       # http port number              
 
-Static_Boot_Ip:
-    Deploy: false
-    Ip: 172.20.22.109
-    Subnet: 255.255.255.0
-    Gateway: 172.20.22.220
-
-Disk_CFG:
-  Deploy: true
-  Partition_Customization:
-    PV0_Size: -1
-  LV_Customization:
-      - Name: rootlv
-        Path: /
-        Size: 10G 
-      - Name: homelv
-        Path: /home
-        Size: 5G
-      - Name: varlv
-        Path: /var
-        Size: 5G
-      - Name: varloglv
-        Path: /var/log
-        Size: 3G
-Apt_CFG:
-  Deploy: true
-  Url: https://ir.ubuntu.sindad.cloud/ubuntu/
-
-Users_CFG:
-    Deploy: true
-    Users:
-      - Deploy: true
-        Username: msh
-        Sudo: false
-        Password: "$6$i70a4vD5ZQdhaJrR$8DBnKtf8kxPTBeWaXQvWSym93cQpJYDLJh8oAn4z08dZ3RzpmG9hzP2pCVzWAjYheDw/sOuCAQ9jKOO0lU/T.1"
-      - Deploy: true
-        Username: ansible
-        Sudo: true
-        Password: "$6$9yMZWY.i.urnYIV2$jekh9N5WBpFe94tCU1cXIsiAgQuldGK0vKiygqpZs7SBF6LAbm3RFYgu3JUSNfKgEYwpEcYbRbi/O9KJACVbT."
-
-Package_CFG:
-  Deploy: true
-  Package_List:
-    - traceroute
-    - htop
+Static_Boot_Ip:                                                                                           # Static IP while the system is booting.
+    Deploy: false                                                                                         # Will be deployed if enabled.
+    Ip: 192.168.1.109                                                                                     # IP address
+    Subnet: 255.255.255.0                                                                                 # Subnet
+    Gateway: 192.168.1.1                                                                                  # Gateway
     
-Host_CFG:
-  - Deploy: true
-    OS:
-      Host_Name: ibm-blade-server-209     # Target Ubuntu hostname.
-      Locale: en_US                            # Target Ubuntu OS locale
-      Keyboardlayout: us                       # Terget Ubuntu OS keyboard layout
-      Keyboardvariant: intl 
-    Network:
-      Ip: 172.20.22.109/24
-      Gateway: 172.20.22.220
-      DNS: 8.8.8.8
-  - Deploy: false                                                    # if True the ISO is going to create.
-    OS:
-      Host_Name: msh-ubuntu-server2  
-      Locale: en_US                            
-      Keyboardlayout: us                      
-      Keyboardvariant: intl 
-    Network:
-      Ip: 172.20.22.110/24
-      Gateway: 172.20.22.1
-      DNS: 
-        - 8.8.8.8
+
+Apt_CFG:                                                                                                  # Apt repository configuration
+  Deploy: true                                                                                            # Will be deployed if enabled.
+  Url: https://ir.ubuntu.sindad.cloud/ubuntu/                                                             # Apt repo URL (the mentined URL here is as an example.)
+  
+
+Package_CFG:                                                                                              # Package configuration
+  Deploy: true                                                                                            # Will be deployed if enabled.
+  Package_List:                                                                                           # Packages list that will be installed on the target server. (List)
+    - traceroute                                                                                          # As an example
+    - htop                                                                                                # As an example
+
+
+Disk_CFG:                                                                                                 # Disk(partition) configurations.
+  Deploy: true                                                                                            # Will be deployed if enabled.
+  Partition_Customization:                                                                                # Partition customization
+    PV0_Size: -1                                                                                          # Partition size(-1 means 100%)
+  LV_Customization:                                                                                       # LV customization (list)
+      - Name: rootlv                                                                                      # As an example of lv name
+        Path: /                                                                                           # As an exmple of mount point path.
+        Size: 10G                                                                                         # As an example of lv size ("G" should be as capital letter)
+      - Name: homelv                                                                                      # As an example of lv name
+        Path: /home                                                                                       # As an exmple of mount point path.
+        Size: 5G                                                                                          # As an example of lv size ("G" should be as capital letter)
+      - Name: varlv                                                                                       # As an example of lv name
+        Path: /var                                                                                        # As an exmple of mount point path.
+        Size: 5G                                                                                          # As an example of lv size ("G" should be as capital letter)
+      - Name: varloglv                                                                                    # As an example of lv name
+        Path: /var/log                                                                                    # As an exmple of mount point path.
+        Size: 3G                                                                                          # As an example of lv size ("G" should be as capital letter)
+
+
+Users_CFG:                                                                                                # Users configuration
+    Deploy: true                                                                                          # Will be deployed if enabled.
+    Users:                                                                                                # User list (List)
+      - Deploy: true                                                                                      # Will be deployed if enabled.   
+        Username: msh                                                                                     # name of the user (username)
+        Sudo: false                                                                                       # define sudoers
+        Password: "$6$VD8AcXOG1Rb8Q8KV$9IBdS1LLPstN8EAoCOTQFGw.GjhGl.daJ9vDpZrjAR62uaA5ydNDMrGAaz/ADpK.Pc6afPHj63VltyM9qnWyp0"  #password: test# (please pay attention to "")
+      - Deploy: true                                                                                      # Will be deployed if enabled.
+        Username: ansible                                                                                 # name of the user (username)
+        Sudo: true                                                                                        # define sudoer
+        Password: "$6$VD8AcXOG1Rb8Q8KV$9IBdS1LLPstN8EAoCOTQFGw.GjhGl.daJ9vDpZrjAR62uaA5ydNDMrGAaz/ADpK.Pc6afPHj63VltyM9qnWyp0"  #password: test# (please pay attention to "")
+
+    
+Host_CFG:                                                                                                 # Host configuration (List)
+  - Deploy: true                                                                                          # if True the ISO is going to create.
+    OS:                                                                                                   # OS configurations such as hostname, keyboard, etc.
+      Host_Name: msh-ubuntu-server-110                                                                    # Target server hostname.
+      Locale: en_US                                                                                       # Target server OS locale.
+      Keyboardlayout: us                                                                                  # Terget server OS keyboard layout.
+      Keyboardvariant: intl                                                                               # Target server OS keyboard variant. 
+    Network:                                                                                              # Network configurations such as IP, Gateway and DNS.
+      Ip: 192.168.1.110/24                                                                                # Target server IP address. (please pay attention to CIDR or "/")
+      Gateway: 192.168.1.1                                                                                # Target server gateway address.
+      DNS:                                                                                                # Target server DNS servers. (list)
+        - 8.8.8.8                                                                                         # As an example of name server address.
+  - Deploy: false                                                                                         # if True the ISO is going to create.(another example)
+    OS:                                                                                                   # OS configurations such as hostname, keyboard, etc.
+      Host_Name: msh-ubuntu-server120                                                                     # Target server hostname.
+      Locale: en_US                                                                                       # Target server OS locale.
+      Keyboardlayout: us                                                                                  # Terget server OS keyboard layout.
+      Keyboardvariant: intl                                                                               # Target server OS keyboard variant.
+    Network:                                                                                              # Network configurations such as IP, Gateway and DNS.
+      Ip: 192.168.1.120/24                                                                                # Target server IP address. (please pay attention to CIDR or "/")
+      Gateway: 192.168.1.1                                                                                # Target server gateway address.
+      DNS:                                                                                                # Target server DNS servers. (list)
+        - 8.8.8.8                                                                                         # As an example of name server address.

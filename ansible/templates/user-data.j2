@@ -146,7 +146,8 @@ autoinstall:
     variant: intl
   apt:
     fallback: continue-anyway   # it does not interrupt the autoinstall procidure if there is no any internet connection.
-    {% if Apt_CFG.Deploy == true -%}
+    {% if ( (Apt_CFG.Deploy == true) and 
+          (Apt_CFG.Url != None  ) ) -%}
     primary:
       - arches: [amd64, i386]
         #uri: http://us.archive.ubuntu.com/ubuntu
