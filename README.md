@@ -1,6 +1,6 @@
 # Ubuntu Autoinstall
 # Updates
-    I tested the playbok when Nocloud_net is not enabled. When I be sure about NoCloud_net, get an update aboute it.
+* I tested the playbok when Nocloud_net is not enabled. When I be sure about NoCloud_net, get an update aboute it.
 # Overview
 
 The project goal is to provide a flexible and as simple as possible configuration for unattended OS installation via ISO file for Ubuntu linux distribution. 
