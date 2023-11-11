@@ -1,105 +1,105 @@
 ---
 # tasks file for ansible
 
-- name: Create working directory on Ansible controller
-  ansible.builtin.file:
-    path: "{{ Global_CFG.Working_Dir }}"
+- name: Create working directory on Ansible controller                                                                    # Create working_directory
+  ansible.builtin.file:                                                                                                   # Ansible file module.
+    path: "{{ Global_CFG.Working_Dir }}"                                                                                  
     state: directory
     mode: "755"
 
-- name: Check ubuntu ISO exists on Ansible controller
-  ansible.builtin.stat:
+- name: Check ubuntu ISO exists on Ansible controller                                                                     # Check the ISO file exists
+  ansible.builtin.stat:                                                                                                   # Ansible stat module.
     path: "{{ Global_CFG.Working_Dir }}/{{ Global_CFG.Ubuntu_ISO }}"
   register: iso_file_check
 
-- name: Download Ubuntu ISO if does not exist on Ansible controller
-  ansible.builtin.get_url:
+- name: Download Ubuntu ISO if does not exist on Ansible controller                                                       # If ISO file does not exist, download.
+  ansible.builtin.get_url:                                                                                                # Ansible get_url module.
       url: "{{ Global_CFG.Ubuntu_ISO_URL }}{{ Global_CFG.Ubuntu_ISO }}"
       dest: "{{ Global_CFG.Working_Dir }}/{{ Global_CFG.Ubuntu_ISO }}"
       mode: "755"
   when:
-    - not iso_file_check.stat.exists
+    - not iso_file_check.stat.exists                                                                                      # Check the ISO file does not exist.
 
-- name: Extract the ubuntu ISO
-  ansible.builtin.command:
+- name: Extract the ubuntu ISO                                                                                            # Extract ISO file with 7z.
+  ansible.builtin.command:                                                                                                # Ansible command module.
     cmd: "7z -y x {{ Global_CFG.Working_Dir }}/{{ Global_CFG.Ubuntu_ISO }} -o{{ Global_CFG.Working_Dir }}/iso_source"
   changed_when: false
 
-- name: move [BOOT] out of extracted ISO directory
-  ansible.builtin.command:
-    cmd: "mv -u {{ Global_CFG.Working_Dir }}/iso_source/'[BOOT]' {{ Global_CFG.Working_Dir }}/BOOT"
+- name: move [BOOT] out of extracted ISO directory                                                                        # move [boot] directory from extracted ISO file.
+  ansible.builtin.command:                                                                                                # Ansible command module.
+    cmd: "mv -u {{ Global_CFG.Working_Dir }}/iso_source/'[BOOT]' {{ Global_CFG.Working_Dir }}/BOOT"                       
   changed_when: false
 
-- name: Create directory to store user-data and meta-data per each target server
-  ansible.builtin.file:
-    path: "{{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}/autoinstall"
-    state: directory
-  loop: "{{ Host_CFG }}"
-  when: 
-    - item.Deploy
-    - not Nocloud_Net.Deploy
+- name: Create directory to store user-data and meta-data per each target server                                          # Create Directory to store user-data.
+  ansible.builtin.file:                                                                                                   # Ansible file module.
+    path: "{{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}/autoinstall"                        
+    state: directory                                                                                                      
+  loop: "{{ Host_CFG }}"                                                                                                  # iterate over Host_CFG list.
+  when:
+    - item.Deploy                                                                                                         # Each item.Deploy in Host_CFG list 
+    - not Nocloud_Net.Deploy                                                                                              # When Nocloud_net.Deploy is not enabled(false).
   tags: 
     - user-data-dir
 
-- name: Create www directory to store user-data and meta-data to use http server.
-  ansible.builtin.file:
+- name: Create www directory to store user-data and meta-data to use http server.                                         # Create www directory to store user-data.
+  ansible.builtin.file:                                                                                                   # Ansible file module.
     path: "{{ Global_CFG.Working_Dir }}/www"
     state: directory
     mode: "755"
-  when: Nocloud_Net.Deploy
+  when: Nocloud_Net.Deploy                                                                                                # When Nocloud_net.Deploy is enabled(true).
 
-- name: Create user-data for each host to sepcified directory.
-  ansible.builtin.template:
+- name: Create user-data for each host to sepcified directory.                                                            #Create user-data file per each item of HOST_CFG list.
+  ansible.builtin.template:                                                                                               # Ansible template module.
     src: user-data.j2
     dest: "{{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}/autoinstall/user-data" 
     mode: "666"
   loop: "{{ Host_CFG }}"
   when: 
-    - item.Deploy
-    - not Nocloud_Net.Deploy
+    - item.Deploy                                                                                                         # If item of Host_CFG list is enabled(Deploy: true)
+    - not Nocloud_Net.Deploy                                                                                              # When Nocloud_net.Deploy is not enabled(false).
   tags:
     - user_data_temp
       
-- name: Create user-data for each target server to use on http server.
-  ansible.builtin.template:
+- name: Create user-data for each target server to use on http server.                                                    #Create user-data file per each item of Host_CFG list.
+  ansible.builtin.template:                                                                                               # Ansible template module.
     src: user-data.j2
     dest: "{{ Global_CFG.Working_Dir }}/www/user-data_{{ item.OS.Host_Name }}"
     mode: "666"
   loop: "{{ Host_CFG }}"
   when: 
-    - item.Deploy
-    - Nocloud_Net.Deploy
+    - item.Deploy                                                                                                         # Each item.Deploy in Host_CFG list
+    - Nocloud_Net.Deploy                                                                                                  # When Nocloud_net.Deploy is enabled(true).
   tags:
     - www-user-data
 
-- name: Copy grub.cfg file into ISO extraction directory
-  ansible.builtin.template:
+- name: Copy grub.cfg file into ISO extraction directory                                                                  # Configure grub.cfg file with grub-cfg.j2 template.
+  ansible.builtin.template:                                                                                               # Ansible template module.
     src: grub-cfg.j2
     dest: "{{ Global_CFG.Working_Dir }}/iso_source/boot/grub/grub.cfg"
     mode: "666"
   tags: 
     - cp_grub
 
-- name: Create an empty meta-data file for ISO file.
-  ansible.builtin.file:
+- name: Create an empty meta-data file for ISO file.                                                                      # Create empty meta-data file.
+  ansible.builtin.file:                                                                                                   # Ansible file module.
     path: "{{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}/autoinstall/meta-data"
     state: touch
     mode: "666"
   loop: "{{ Host_CFG }}"
   when: 
-    - item.Deploy
-    - not Nocloud_Net.Deploy
+    - item.Deploy                                                                                                         # Each item.Deploy in Host_CFG list
+    - not Nocloud_Net.Deploy                                                                                              # When Nocloud_net.Deploy is not enabled(false).
 
-- name: Create an empty meta-data file for http server.
+- name: Create an empty meta-data file for http server.                                                                   # Create empty meta-data file.
   ansible.builtin.file:
     path: "{{ Global_CFG.Working_Dir }}/www/meta-data"
     state: touch
     mode: "666"
   when: 
-    - Nocloud_Net.Deploy
+    - Nocloud_Net.Deploy                                                                                                 # When Nocloud_net.Deploy is enabled(true).
 
-- name: Create custom ubuntu ISO-cdrom
-  ansible.builtin.command: 
+- name: Create custom ubuntu ISO-cdrom                                                                                   # Create customized ISO file.
+  ansible.builtin.command:                                                                                               # Ansible cmd module.
     cmd:  "xorriso -as mkisofs -r \
           -V 'Ubuntu 22.04 LTS AUTO (EFIBIOS)' \
           -o {{ Global_CFG.Working_Dir }}/{{ item.OS.Host_Name }}.iso \
@@ -116,12 +116,12 @@
           -e '--interval:appended_partition_2:::' \
           -no-emul-boot \
           {{ Global_CFG.Working_Dir }}/iso_source {{ Global_CFG.Working_Dir }}/target-server-files/{{ item.OS.Host_Name }}" 
-  loop: "{{ Host_CFG }}"
-  when: 
-    - item.Deploy
-    - not Nocloud_Net.Deploy
+  loop: "{{ Host_CFG }}"                                                                                                # each item of Host_CFG list.
+  when:
+    - item.Deploy                                                                                                       # Each item.Deploy in Host_CFG list.
+    - not Nocloud_Net.Deploy                                                                                            # When Nocloud_net.Deploy is not enabled(false).
 
-- name: Create custom ubuntu ISO-nscloud_net
+- name: Create custom ubuntu ISO-nscloud_net                                                                            # Create customized ISO file.
   ansible.builtin.command: 
     cmd:  "xorriso -as mkisofs -r \
           -V 'Ubuntu 22.04 LTS AUTO (EFIBIOS)' \
@@ -141,31 +141,20 @@
           {{ Global_CFG.Working_Dir }}/iso_source " 
   loop: "{{ Host_CFG }}"
   when: 
-    - item.Deploy
-    - Nocloud_Net.Deploy
+    - item.Deploy                                                                                                     # Each item.Deploy in Host_CFG list.  
+    - Nocloud_Net.Deploy                                                                                              # When Nocloud_net.Deploy is not enabled(false).
 
-#- name: copy file from linux to vcenter
-#  community.vmware.vsphere_copy:
-#    hostname: 172.20.22.120
-#    username: administrator@vsphere.local
-#    password: C10ud_SHM!
-#    validate_certs: False
-#    datacenter: "SHM Datacenter"
-#    src: "{{ Global_CFG.Working_Dir }}/{{ item.OS.Host_Name }}.iso"
-#    datastore: "FUJITSU DX80"
-#    path: "/ISO/msh/{{ item.OS.Host_Name }}.iso"
-#  loop: "{{ Host_CFG }}"
-#  when: item.Deploy
-#  tags:
-#    - copy
-
-- name: remove BOOT directory
+- name: remove BOOT directory                                                                                         # Remove BOOT directory.
   ansible.builtin.command:
-    cmd: "rm -rf {{ Global_CFG.Working_Dir }}/BOOT"
+    cmd: "rm -rf {{ Global_CFG.Working_Dir }}/BOOT"                                                                   # Ansible cmd module.
   changed_when: false
 
 
-- name: remove iso_source directory to free space
-  ansible.builtin.command:
+- name: remove iso_source directory to free space                                                                    # remove iso_source directory
+  ansible.builtin.command:                                                                                           # Ansible cmd module.
     cmd: "rm -rf {{ Global_CFG.Working_Dir }}/iso_source"
   changed_when: false
+
+- name: remove target-server-files directory                                                                         # Remove target-server-file directory.
+  ansible.builtin.command:                                                                                           # Ansible command module.
+    cmd: "rm -rf {{ Global_CFG.Working_Dir }}/target-server-files"
