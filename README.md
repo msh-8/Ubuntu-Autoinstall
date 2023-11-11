@@ -403,6 +403,7 @@ fi                  # end if ({% if Nocloud_Net.Deploy  == true %})
 
 # Usage
 ### Install requirements
+      sudo aptg-et upgrade
       sudo apt-get install git 
       sudo apt-get install p7zip-full
       sudo apt-get install xorriso
