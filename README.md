@@ -1,9 +1,5 @@
 # Ubuntu Autoinstall
 
-[comment]: <>  (# Languages)
-[comment]: <> (* persian: Ongoing)
-
-
 # Overview
 
 The project goal is to provide a flexible and as simple as possible configuration for unattended OS installation via ISO file for Ubuntu linux distribution. 
