@@ -411,6 +411,8 @@ fi                  # end if ({% if Nocloud_Net.Deploy  == true %})
       sudo apt-get install python3-pip
       sudo python3 -m pip install ansible
       git clone https://github.com/msh-8/autoinstall.git
+      cd Ubuntu-Autoinstall
+      
 ### Run playbook
 **First of all, please change the variables as your requirements.**
 ```
